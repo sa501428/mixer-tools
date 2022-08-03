@@ -80,7 +80,7 @@ public class ShuffleAndUMAP extends MixerCLT {
             printUsageAndExit(51);
         }
 
-        ds = HiCFileTools.extractDatasetForCLT(args[1], true, false);
+        ds = HiCFileTools.extractDatasetForCLT(args[1], false, false, false);
 
         referenceBedFiles = args[2].split(",");
         outputDirectory = HiCFileTools.createValidDirectory(args[3]);

@@ -46,7 +46,7 @@ public class ExtractionB4 {
     public static void extract() {
         Dataset ds = HiCFileTools.extractDatasetForCLT(
                 "/Users/mshamim/Desktop/hicfiles/gm12878_rh14_30.hic",
-                true, false);
+                false, false, false);
         Chromosome chrom19 = ds.getChromosomeHandler().getChromosomeFromName("19");
 
         final MatrixZoomData zd = HiCFileTools.getMatrixZoomData(ds, chrom19, chrom19, RESOLUTION);

@@ -31,12 +31,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="6acb92ea-ffe9-4dfd-8d8d-f8ce0f27bdf3" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/artifacts/MixerTools_jar.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/artifacts/MixerTools_jar.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/mixer/algos/Magic.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/algos/Magic.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/mixer/clt/CommandLineParserForMixer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/clt/CommandLineParserForMixer.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/mixer/utils/magic/FinalScale.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/utils/magic/FinalScale.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/mixer/utils/magic/MagicMatrix.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/utils/magic/MagicMatrix.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/mixer/utils/magic/SymmLLInterMatrix.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/utils/magic/SymmLLInterMatrix.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/general/java-straw.2.14.3.jar" beforeDir="false" afterPath="$PROJECT_DIR$/lib/general/java-straw.2.18.4.jar" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -60,7 +57,7 @@
     </option>
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="chic-updates" />
+        <entry key="$PROJECT_DIR$" value="magic" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -81,14 +78,14 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Volumes/AidenLabWD6/Github/IdeaProjects/mixer-tools&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "last_opened_file_path": "/Users/muhammad/IdeaProjects/mixer-tools/lib/general"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CreateClassDialog.RecentsKey">
       <recent name="mixer.utils.magic" />
@@ -97,13 +94,16 @@
       <recent name="mixer.utils.shuffle" />
       <recent name="mixer.utils.rougheval" />
     </key>
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/lib/general" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/src/mixer/algos" />
       <recent name="$PROJECT_DIR$/lib/general" />
     </key>
     <key name="CopyClassDialog.RECENTS_KEY">
-      <recent name="mixer.utils.magic" />
       <recent name="mixer.algos" />
+      <recent name="mixer.utils.magic" />
       <recent name="mixer.utils.rougheval" />
       <recent name="mixer.utils.common" />
       <recent name="mixer.utils.slice.cleaning" />
@@ -258,14 +258,18 @@
       <workItem from="1652890680654" duration="3691000" />
       <workItem from="1656619105665" duration="567000" />
       <workItem from="1656631142546" duration="16000" />
-      <workItem from="1657715097940" duration="10610000" />
-    </task>
-    <task id="LOCAL-00165" summary="code cleanup, split up postprocessing/scoring">
-      <created>1634279167304</created>
-      <option name="number" value="00165" />
-      <option name="presentableId" value="LOCAL-00165" />
-      <option name="project" value="LOCAL" />
-      <updated>1634279167304</updated>
+      <workItem from="1657715097940" duration="11253000" />
+      <workItem from="1658347305467" duration="1246000" />
+      <workItem from="1658517681862" duration="353000" />
+      <workItem from="1658689793811" duration="10000" />
+      <workItem from="1658690020372" duration="83000" />
+      <workItem from="1658771242330" duration="808000" />
+      <workItem from="1658778619240" duration="1137000" />
+      <workItem from="1659160687353" duration="1517000" />
+      <workItem from="1659372050934" duration="13000" />
+      <workItem from="1659377978096" duration="107000" />
+      <workItem from="1659442894332" duration="444000" />
+      <workItem from="1659551504615" duration="141000" />
     </task>
     <task id="LOCAL-00166" summary="subsampling, query silhouette, bug fixes">
       <created>1634320411057</created>
@@ -603,7 +607,14 @@
       <option name="project" value="LOCAL" />
       <updated>1657730030446</updated>
     </task>
-    <option name="localTasksCounter" value="214" />
+    <task id="LOCAL-00214" summary="incorporate scaling option, use int target vector, return balanced matrix">
+      <created>1657733779523</created>
+      <option name="number" value="00214" />
+      <option name="presentableId" value="LOCAL-00214" />
+      <option name="project" value="LOCAL" />
+      <updated>1657733779523</updated>
+    </task>
+    <option name="localTasksCounter" value="215" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -627,7 +638,6 @@
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <option name="CHECK_CODE_CLEANUP_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="update encode printing" />
     <MESSAGE value="update encode cluster name printing" />
     <MESSAGE value="update java straw jar new api" />
     <MESSAGE value="update java straw" />
@@ -652,7 +662,8 @@
     <MESSAGE value="update coverage handling" />
     <MESSAGE value="code cleanup" />
     <MESSAGE value="implement LL inter only matrix" />
-    <option name="LAST_COMMIT_MESSAGE" value="implement LL inter only matrix" />
+    <MESSAGE value="incorporate scaling option, use int target vector, return balanced matrix" />
+    <option name="LAST_COMMIT_MESSAGE" value="incorporate scaling option, use int target vector, return balanced matrix" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />

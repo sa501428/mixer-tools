@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2011-2021 Rice University, Baylor College of Medicine, Aiden Lab
+ * Copyright (c) 2011-2022 Rice University, Baylor College of Medicine, Aiden Lab
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,7 +38,7 @@ public class Unused {
     public static void run() {
         Dataset ds = HiCFileTools.extractDatasetForCLT(
                 "/Users/mshamim/Desktop/hicfiles/SCALE/hap1_SCALE_30.hic",
-                false, false);
+                false, false, false);
         File outfolder = new File("/Users/mshamim/Desktop/out_norms");
         NormalizationType gw_norm = ds.getNormalizationTypesMap().get("GW_SCALE");
         NormalizationType inter_norm = ds.getNormalizationTypesMap().get("INTER_SCALE");

@@ -83,7 +83,7 @@ public class Slice extends MixerCLT {
         for (String path : args[1].split(",")) {
             System.out.println("Extracting " + path);
             inputHicFilePaths.add(path);
-            datasetList.add(HiCFileTools.extractDatasetForCLT(path, true, false));
+            datasetList.add(HiCFileTools.extractDatasetForCLT(path, false, false, false));
         }
 
         try {
