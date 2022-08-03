@@ -79,7 +79,7 @@ public class ABA extends MixerCLT {
         outputDirectory = HiCFileTools.createValidDirectory(args[3]);
 
         List<String> summedHiCFiles = Arrays.asList(args[1].split("\\+"));
-        ds = HiCFileTools.extractDatasetForCLT(summedHiCFiles.get(0), false, false, false);
+        ds = HiCFileTools.extractDatasetForCLT(summedHiCFiles.get(0), false, false, true);
 
         NormalizationType preferredNorm = parser.getNormalizationTypeOption(ds.getNormalizationHandler());
         if (preferredNorm != null)

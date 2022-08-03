@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2011-2021 Rice University, Baylor College of Medicine, Aiden Lab
+ * Copyright (c) 2011-2022 Rice University, Baylor College of Medicine, Aiden Lab
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,6 @@ package mixer.utils.slice.matrices;
 import javastraw.reader.Dataset;
 import javastraw.reader.basics.Chromosome;
 import javastraw.reader.basics.ChromosomeHandler;
-import javastraw.reader.block.Block;
 import javastraw.reader.block.ContactRecord;
 import javastraw.reader.mzd.MatrixZoomData;
 import javastraw.reader.type.NormalizationType;
@@ -40,7 +39,7 @@ import mixer.utils.slice.structures.SubcompartmentInterval;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -92,6 +91,7 @@ public class SliceMatrix extends CompositeGenomeWideMatrix {
             }
         }
         System.out.println(".");
+        System.out.println("Inter Matrix Built");
 
         return new MatrixAndWeight(interMatrix, weights);
     }
@@ -137,18 +137,11 @@ public class SliceMatrix extends CompositeGenomeWideMatrix {
                                         Chromosome chr1, int offsetIndex1, int compressedOffsetIndex1,
                                         Chromosome chr2, int offsetIndex2, int compressedOffsetIndex2,
                                         NormalizationType interNorm) {
-        int lengthChr1 = (int) (chr1.getLength() / resolution + 1);
-        int lengthChr2 = (int) (chr2.getLength() / resolution + 1);
-        List<Block> blocks = null;
+        Iterator<ContactRecord> recordIterator = null;
         try {
             if (!isIntra) {
                 final MatrixZoomData zd = HiCFileTools.getMatrixZoomData(ds, chr1, chr2, resolution);
-                blocks = HiCFileTools.getAllRegionBlocks(zd, 0, lengthChr1, 0, lengthChr2,
-                        interNorm, false);
-                if (blocks.size() < 1) {
-                    System.err.println("Missing Interchromosomal Data " + zd.getKey());
-                    System.exit(98);
-                }
+                recordIterator = zd.getNormalizedIterator(interNorm);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -167,12 +160,12 @@ public class SliceMatrix extends CompositeGenomeWideMatrix {
             updateSubcompartmentMap(chr1, badIndices.getBadIndices(chr1), offsetIndex1, rowIndexToIntervalMap);
         }
 
-        copyValuesToArea(matrix, blocks,
+        copyValuesToArea(matrix, recordIterator,
                 rowPosChrom1, colPosChrom1, rowPosChrom2, colPosChrom2, isIntra);
     }
 
 
-    private void copyValuesToArea(float[][] matrix, List<Block> blocks,
+    private void copyValuesToArea(float[][] matrix, Iterator<ContactRecord> iterator,
                                   Map<Integer, Integer> rowPosChrom1, Map<Integer, Integer> colPosChrom1,
                                   Map<Integer, Integer> rowPosChrom2, Map<Integer, Integer> colPosChrom2,
                                   boolean isIntra) {
@@ -183,21 +176,18 @@ public class SliceMatrix extends CompositeGenomeWideMatrix {
                 }
             }
         } else {
-            for (Block b : blocks) {
-                if (b != null) {
-                    for (ContactRecord cr : b.getContactRecords()) {
-                        float val = cr.getCounts();
-                        if (!Float.isNaN(val)) {
-                            int binX = cr.getBinX();
-                            int binY = cr.getBinY();
+            while (iterator.hasNext()) {
+                ContactRecord cr = iterator.next();
+                float val = cr.getCounts();
+                if (!Float.isNaN(val)) {
+                    int binX = cr.getBinX();
+                    int binY = cr.getBinY();
 
-                            if (rowPosChrom1.containsKey(binX) && colPosChrom2.containsKey(binY)) {
-                                matrix[rowPosChrom1.get(binX)][colPosChrom2.get(binY)] += val;
-                            }
-                            if (rowPosChrom2.containsKey(binY) && colPosChrom1.containsKey(binX)) {
-                                matrix[rowPosChrom2.get(binY)][colPosChrom1.get(binX)] += val;
-                            }
-                        }
+                    if (rowPosChrom1.containsKey(binX) && colPosChrom2.containsKey(binY)) {
+                        matrix[rowPosChrom1.get(binX)][colPosChrom2.get(binY)] += val;
+                    }
+                    if (rowPosChrom2.containsKey(binY) && colPosChrom1.containsKey(binX)) {
+                        matrix[rowPosChrom2.get(binY)][colPosChrom1.get(binX)] += val;
                     }
                 }
             }

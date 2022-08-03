@@ -86,7 +86,7 @@ public class ChromosomeWalker extends MixerCLT {
             printUsageAndExit(8);  // this will exit
         }
 
-        ds = HiCFileTools.extractDatasetForCLT(args[1], false, false, false);
+        ds = HiCFileTools.extractDatasetForCLT(args[1], false, false, true);
         outputDirectory = HiCFileTools.createValidDirectory(args[3]);
 
 

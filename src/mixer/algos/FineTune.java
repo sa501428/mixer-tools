@@ -67,7 +67,7 @@ public class FineTune extends MixerCLT {
 
         inputBedpeFile = args[2];
         outputPath = args[3];
-        ds = HiCFileTools.extractDatasetForCLT(args[1], false, false, false);
+        ds = HiCFileTools.extractDatasetForCLT(args[1], false, false, true);
 
         NormalizationType preferredNorm = mixerParser.getNormalizationTypeOption(ds.getNormalizationHandler());
         if (preferredNorm != null)

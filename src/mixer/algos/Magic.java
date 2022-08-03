@@ -70,7 +70,7 @@ public class Magic extends MixerCLT {
             printUsageAndExit(5);
         }
 
-        ds = HiCFileTools.extractDatasetForCLT(args[1], false, false, false);
+        ds = HiCFileTools.extractDatasetForCLT(args[1], false, false, true);
         try {
             String[] valString = args[2].split(",");
             ClusteringMagic.startingClusterSizeK = Integer.parseInt(valString[0]);

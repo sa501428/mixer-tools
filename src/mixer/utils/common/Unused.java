@@ -38,7 +38,7 @@ public class Unused {
     public static void run() {
         Dataset ds = HiCFileTools.extractDatasetForCLT(
                 "/Users/mshamim/Desktop/hicfiles/SCALE/hap1_SCALE_30.hic",
-                false, false, false);
+                false, false, true);
         File outfolder = new File("/Users/mshamim/Desktop/out_norms");
         NormalizationType gw_norm = ds.getNormalizationTypesMap().get("GW_SCALE");
         NormalizationType inter_norm = ds.getNormalizationTypesMap().get("INTER_SCALE");

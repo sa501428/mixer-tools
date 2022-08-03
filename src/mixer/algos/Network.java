@@ -61,7 +61,7 @@ public class Network extends MixerCLT {
 
         inputBedpeFile = args[2];
         outputPath = args[3];
-        ds = HiCFileTools.extractDatasetForCLT(args[1], false, false, false);
+        ds = HiCFileTools.extractDatasetForCLT(args[1], false, false, true);
 
         try {
             int specifiedResolution = mixerParser.getMultipleResolutionOptions().get(0);
