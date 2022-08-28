@@ -37,9 +37,10 @@ import mixer.utils.InterChromosomeRegion;
 import mixer.utils.bed.BedFileMappings;
 import mixer.utils.common.ArrayTools;
 import mixer.utils.common.LogTools;
+import mixer.utils.common.ParallelizedStatTools;
 import mixer.utils.common.ZScoreTools;
 import mixer.utils.drive.DriveMatrix;
-import mixer.utils.magic.clean.EmptyRowCleaner;
+import mixer.utils.slice.cleaning.utils.RowCleaner;
 import mixer.utils.slice.structures.SubcompartmentInterval;
 
 import java.io.File;
@@ -64,7 +65,7 @@ public class MagicMatrix extends DriveMatrix {
         this.regionsToIgnore = regionsToIgnore;
         this.rowIndexToIntervalMap = createIndexToIntervalMap(chromosomeHandler, resolution);
         matrix = populateMatrix(ds, chromosomeHandler, resolution,
-                norm, mappings, doScale);
+                norm, mappings, doScale, outputDirectory);
         System.out.println("MAGIC matrix loaded");
 
         if (useZscore) {
@@ -182,7 +183,7 @@ public class MagicMatrix extends DriveMatrix {
 
     private float[][] populateMatrix(Dataset ds, ChromosomeHandler handler, int resolution,
                                      NormalizationType norm, BedFileMappings mappings,
-                                     boolean doScale) {
+                                     boolean doScale, File output) {
         float[][] matrix = new float[numRows][numCols];
         int[] offsets = mappings.getOffsets();
         int[] indexToClusterID = mappings.getIndexToClusterID();
@@ -220,10 +221,10 @@ public class MagicMatrix extends DriveMatrix {
             System.out.println(".");
         }
 
+        //normalizeMatrix(matrix, genomewideDistributionForChrom, mappings.getBinIndexToChromIndex());
+
+        /*
         LogTools.simpleLogWithCleanup(matrix, Float.NaN);
-
-
-        normalizeMatrix(matrix, genomewideDistributionForChrom, mappings.getBinIndexToChromIndex());
 
         float[] coverage = new float[numRows];
         updateCoverage(matrix, coverage);
@@ -237,19 +238,34 @@ public class MagicMatrix extends DriveMatrix {
 
         LogTools.simpleExpm1(matrix);
 
+
         if (doScale) {
             return FinalScale.scaleMatrix(new SymmLLInterMatrix(matrix), createTargetVector(totalDistribution));
         } else {
             return matrix;
         }
+        */
+
+        ParallelizedStatTools.setZerosToNan(matrix);
+        //ParallelizedStatTools.scaleDown(data, weights);
+        LogTools.simpleLogWithCleanup(matrix, Float.NaN);
+        //removeHighGlobalThresh(matrix, weights, 5, Slice.USE_WEIGHTED_MEAN);
+        //renormalize(matrix, weights, -2, 2, Slice.USE_WEIGHTED_MEAN);
+        LogTools.simpleExpm1(matrix);
+
+        System.out.println("Matrix size before row cleanup " + matrix.length + " x " + matrix[0].length);
+        matrix = (new RowCleaner(matrix, rowIndexToIntervalMap, weights)).getCleanedData(resolution, output).matrix;
+        System.out.println("Matrix size after row cleanup " + matrix.length + " x " + matrix[0].length);
+
+        ZScoreTools.inPlaceZscoreDownCol(matrix);
+
+        return matrix;
     }
 
     private int[] createTargetVector(int[] colSums) {
         int[] target = new int[numRows + numCols];
         Arrays.fill(target, 1);
-        for (int i = 0; i < numCols; i++) {
-            target[i] = colSums[i];
-        }
+        if (numCols >= 0) System.arraycopy(colSums, 0, target, 0, numCols);
         return target;
     }
 

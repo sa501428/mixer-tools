@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2011-2021 Rice University, Baylor College of Medicine, Aiden Lab
+ * Copyright (c) 2011-2022 Rice University, Baylor College of Medicine, Aiden Lab
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,8 +33,8 @@ import javastraw.reader.block.ContactRecord;
 import javastraw.reader.mzd.MatrixZoomData;
 import javastraw.reader.type.NormalizationType;
 import javastraw.tools.HiCFileTools;
-import mixer.MixerGlobals;
 import mixer.algos.Slice;
+import mixer.utils.slice.structures.HiCInterTools;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 import java.awt.*;
@@ -57,7 +57,7 @@ public class SimpleTranslocationFinder {
         for (int z = 0; z < datasets.size(); z++) {
 
             Dataset ds = datasets.get(z);
-            int lowestResZoom = 1000000;// HiCInterTools.getLowestResolution(ds);
+            int lowestResZoom = HiCInterTools.getLowestResolution(ds);
             NormalizationType normGW = normalizationTypes.get(z)[Slice.GW_SCALE_INDEX];
             NormalizationType normNone = ds.getNormalizationHandler().getNormTypeFromString("NONE");
             NormalizationType normIntra = normalizationTypes.get(z)[Slice.INTRA_SCALE_INDEX];
@@ -158,7 +158,7 @@ public class SimpleTranslocationFinder {
             }
         }
 
-        if (true || MixerGlobals.printVerboseComments) {
+        if (true) {
             File outfile = new File(outputDirectory, "suspected_translocations_" + lowestResZoom + ".bedpe");
             feature2DList.exportFeatureList(outfile, false, Feature2DList.ListFormat.NA);
             outfile = new File(outputDirectory, "all_suspected_translocations_" + lowestResZoom + ".bedpe");
@@ -182,8 +182,8 @@ public class SimpleTranslocationFinder {
                             feature2DS.add(new int[]{cr.getBinX(), cr.getBinY()});
                             allFeature2DList.add(chrom1.getIndex(), chrom2.getIndex(),
                                     new Feature2D(Feature2D.FeatureType.NONE,
-                                            chrom1.getName(), cr.getBinX() * resolution, (cr.getBinX() + 1) * resolution,
-                                            chrom2.getName(), cr.getBinY() * resolution, (cr.getBinY() + 1) * resolution,
+                                            chrom1.getName(), (long) cr.getBinX() * resolution, (long) (cr.getBinX() + 1) * resolution,
+                                            chrom2.getName(), (long) cr.getBinY() * resolution, (long) (cr.getBinY() + 1) * resolution,
                                             Color.black, attributes));
                         }
                     }
