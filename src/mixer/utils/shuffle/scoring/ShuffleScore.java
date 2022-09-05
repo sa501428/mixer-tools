@@ -24,6 +24,8 @@
 
 package mixer.utils.shuffle.scoring;
 
+import java.util.Map;
+
 public abstract class ShuffleScore {
     protected final float[][] matrix;
     protected final Integer[] rBounds;
@@ -48,4 +50,39 @@ public abstract class ShuffleScore {
     }
 
     protected abstract float score(Integer[] rBounds, Integer[] cBounds);
+
+    protected String getKey(int rI, int cI) {
+        if (rI <= cI) {
+            return rI + "_" + cI;
+        }
+        //return cI+"_"+rI;
+        return rI + "_" + cI;
+    }
+
+    protected long populateMeanMap(Map<String, Double> sumMap, Map<String, Long> numRegionMap) {
+        long numElements = 0;
+        for (int rI = 0; rI < rBounds.length - 1; rI++) {
+            for (int cI = 0; cI < cBounds.length - 1; cI++) {
+                double sum = 0;
+                long numInRegion = 0;
+                for (int i = rBounds[rI]; i < rBounds[rI + 1]; i++) {
+                    for (int j = cBounds[cI]; j < cBounds[cI + 1]; j++) {
+                        sum += matrix[i][j];
+                        numInRegion++;
+                    }
+                }
+
+                String key = getKey(rI, cI);
+                if (sumMap.containsKey(key)) {
+                    sumMap.put(key, sumMap.get(key) + sum);
+                    numRegionMap.put(key, numRegionMap.get(key) + numInRegion);
+                } else {
+                    sumMap.put(key, sum);
+                    numRegionMap.put(key, numInRegion);
+                }
+                numElements += numInRegion;
+            }
+        }
+        return numElements;
+    }
 }

@@ -30,10 +30,11 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6acb92ea-ffe9-4dfd-8d8d-f8ce0f27bdf3" name="Default Changelist" comment="">
+    <list default="true" id="6acb92ea-ffe9-4dfd-8d8d-f8ce0f27bdf3" name="Default Changelist" comment="bug fix for exporting">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/mixer/utils/magic/MagicMatrix.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/utils/magic/MagicMatrix.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/mixer/utils/slice/cleaning/SimpleTranslocationFinder.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/utils/slice/cleaning/SimpleTranslocationFinder.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/mixer/utils/shuffle/scoring/KLDivergenceScoring.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/utils/shuffle/scoring/KLDivergenceScoring.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/mixer/utils/shuffle/scoring/ShuffleScore.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/utils/shuffle/scoring/ShuffleScore.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/mixer/utils/shuffle/scoring/VarianceScoring.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/utils/shuffle/scoring/VarianceScoring.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -274,14 +275,13 @@
       <workItem from="1661393508298" duration="1312000" />
       <workItem from="1661666706372" duration="33000" />
       <workItem from="1661670930097" duration="34000" />
-      <workItem from="1661671023294" duration="1208000" />
-    </task>
-    <task id="LOCAL-00168" summary="comment out silhouette">
-      <created>1635964205662</created>
-      <option name="number" value="00168" />
-      <option name="presentableId" value="LOCAL-00168" />
-      <option name="project" value="LOCAL" />
-      <updated>1635964205662</updated>
+      <workItem from="1661671023294" duration="1327000" />
+      <workItem from="1661718791467" duration="910000" />
+      <workItem from="1661735093975" duration="270000" />
+      <workItem from="1661751268117" duration="1159000" />
+      <workItem from="1662242595887" duration="2638000" />
+      <workItem from="1662298396607" duration="613000" />
+      <workItem from="1662331457948" duration="2632000" />
     </task>
     <task id="LOCAL-00169" summary="code cleanup, change defaults, save genome coordinates">
       <created>1635965724346</created>
@@ -619,7 +619,14 @@
       <option name="project" value="LOCAL" />
       <updated>1659552417149</updated>
     </task>
-    <option name="localTasksCounter" value="217" />
+    <task id="LOCAL-00217" summary="bug fix for exporting">
+      <created>1661672908149</created>
+      <option name="number" value="00217" />
+      <option name="presentableId" value="LOCAL-00217" />
+      <option name="project" value="LOCAL" />
+      <updated>1661672908149</updated>
+    </task>
+    <option name="localTasksCounter" value="218" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -643,7 +650,6 @@
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <option name="CHECK_CODE_CLEANUP_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="update java straw jar new api" />
     <MESSAGE value="update java straw" />
     <MESSAGE value="initial randoms/seeds differently; fix bug for non-humans" />
     <MESSAGE value="fix random seed issue" />
@@ -668,7 +674,8 @@
     <MESSAGE value="incorporate scaling option, use int target vector, return balanced matrix" />
     <MESSAGE value="update straw" />
     <MESSAGE value="update straw, change iterator" />
-    <option name="LAST_COMMIT_MESSAGE" value="update straw, change iterator" />
+    <MESSAGE value="bug fix for exporting" />
+    <option name="LAST_COMMIT_MESSAGE" value="bug fix for exporting" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />

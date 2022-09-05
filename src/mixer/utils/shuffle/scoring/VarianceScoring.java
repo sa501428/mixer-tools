@@ -24,6 +24,9 @@
 
 package mixer.utils.shuffle.scoring;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class VarianceScoring extends ShuffleScore {
     public VarianceScoring(float[][] matrix, Integer[] rBounds, Integer[] cBounds) {
         super(matrix, rBounds, cBounds);
@@ -32,24 +35,21 @@ public class VarianceScoring extends ShuffleScore {
     @Override
     protected float score(Integer[] rBounds, Integer[] cBounds) {
         double sumOfSquareErr = 0;
-        int numElements = 0;
+        Map<String, Double> sumMap = new HashMap<>();
+        Map<String, Long> numRegionMap = new HashMap<>();
+        long numElements = populateMeanMap(sumMap, numRegionMap);
+
+
         for (int rI = 0; rI < rBounds.length - 1; rI++) {
             for (int cI = 0; cI < cBounds.length - 1; cI++) {
-                double sum = 0;
-                int numInRegion = 0;
-                for (int i = rBounds[rI]; i < rBounds[rI + 1]; i++) {
-                    for (int j = cBounds[cI]; j < cBounds[cI + 1]; j++) {
-                        sum += matrix[i][j];
-                        numInRegion++;
-                    }
-                }
-                double mu = sum / numInRegion;
-                numElements += numInRegion;
-
-                for (int i = rBounds[rI]; i < rBounds[rI + 1]; i++) {
-                    for (int j = cBounds[cI]; j < cBounds[cI + 1]; j++) {
-                        double v = matrix[i][j] - mu;
-                        sumOfSquareErr += v * v;
+                String key = getKey(rI, cI);
+                if (numRegionMap.get(key) > 0) {
+                    double mu = sumMap.get(key) / numRegionMap.get(key);
+                    for (int i = rBounds[rI]; i < rBounds[rI + 1]; i++) {
+                        for (int j = cBounds[cI]; j < cBounds[cI + 1]; j++) {
+                            double v = matrix[i][j] - mu;
+                            sumOfSquareErr += v * v;
+                        }
                     }
                 }
             }
