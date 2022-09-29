@@ -30,11 +30,11 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6acb92ea-ffe9-4dfd-8d8d-f8ce0f27bdf3" name="Default Changelist" comment="bug fix for exporting">
+    <list default="true" id="6acb92ea-ffe9-4dfd-8d8d-f8ce0f27bdf3" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/artifacts/MixerTools_jar.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/artifacts/MixerTools_jar.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/libraries/java_straw_1_4_1.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/java_straw_1_4_1.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/mixer/utils/shuffle/scoring/KLDivergenceScoring.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/utils/shuffle/scoring/KLDivergenceScoring.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/mixer/utils/shuffle/scoring/ShuffleScore.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/utils/shuffle/scoring/ShuffleScore.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/mixer/utils/shuffle/scoring/VarianceScoring.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/utils/shuffle/scoring/VarianceScoring.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/general/java-straw.2.18.4.jar" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -58,7 +58,7 @@
     </option>
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="magic" />
+        <entry key="$PROJECT_DIR$" value="recode" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -281,14 +281,9 @@
       <workItem from="1661751268117" duration="1159000" />
       <workItem from="1662242595887" duration="2638000" />
       <workItem from="1662298396607" duration="613000" />
-      <workItem from="1662331457948" duration="2632000" />
-    </task>
-    <task id="LOCAL-00169" summary="code cleanup, change defaults, save genome coordinates">
-      <created>1635965724346</created>
-      <option name="number" value="00169" />
-      <option name="presentableId" value="LOCAL-00169" />
-      <option name="project" value="LOCAL" />
-      <updated>1635965724346</updated>
+      <workItem from="1662331457948" duration="3320000" />
+      <workItem from="1662538076368" duration="595000" />
+      <workItem from="1664414256163" duration="23000" />
     </task>
     <task id="LOCAL-00170" summary="upgrade straw jar">
       <created>1637388602880</created>
@@ -626,7 +621,14 @@
       <option name="project" value="LOCAL" />
       <updated>1661672908149</updated>
     </task>
-    <option name="localTasksCounter" value="218" />
+    <task id="LOCAL-00218" summary="symm test">
+      <created>1662406477144</created>
+      <option name="number" value="00218" />
+      <option name="presentableId" value="LOCAL-00218" />
+      <option name="project" value="LOCAL" />
+      <updated>1662406477144</updated>
+    </task>
+    <option name="localTasksCounter" value="219" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -650,7 +652,6 @@
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <option name="CHECK_CODE_CLEANUP_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="update java straw" />
     <MESSAGE value="initial randoms/seeds differently; fix bug for non-humans" />
     <MESSAGE value="fix random seed issue" />
     <MESSAGE value="fix random seed issues" />
@@ -675,7 +676,8 @@
     <MESSAGE value="update straw" />
     <MESSAGE value="update straw, change iterator" />
     <MESSAGE value="bug fix for exporting" />
-    <option name="LAST_COMMIT_MESSAGE" value="bug fix for exporting" />
+    <MESSAGE value="symm test" />
+    <option name="LAST_COMMIT_MESSAGE" value="symm test" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />
