@@ -30,11 +30,13 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6acb92ea-ffe9-4dfd-8d8d-f8ce0f27bdf3" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/artifacts/MixerTools_jar.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/artifacts/MixerTools_jar.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/java_straw_1_4_1.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/java_straw_1_4_1.xml" afterDir="false" />
+    <list default="true" id="6acb92ea-ffe9-4dfd-8d8d-f8ce0f27bdf3" name="Default Changelist" comment="update straw">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/general/java-straw.2.18.4.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/mixer/MixerGlobals.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/MixerGlobals.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/mixer/utils/matrix/ScoreContainer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/utils/matrix/ScoreContainer.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/mixer/utils/matrix/ShuffledIndices.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/utils/matrix/ShuffledIndices.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/mixer/utils/shuffle/ShuffleAction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/utils/shuffle/ShuffleAction.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/mixer/utils/shuffle/scoring/ShuffleScore.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/utils/shuffle/scoring/ShuffleScore.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -283,14 +285,11 @@
       <workItem from="1662298396607" duration="613000" />
       <workItem from="1662331457948" duration="3320000" />
       <workItem from="1662538076368" duration="595000" />
-      <workItem from="1664414256163" duration="23000" />
-    </task>
-    <task id="LOCAL-00170" summary="upgrade straw jar">
-      <created>1637388602880</created>
-      <option name="number" value="00170" />
-      <option name="presentableId" value="LOCAL-00170" />
-      <option name="project" value="LOCAL" />
-      <updated>1637388602880</updated>
+      <workItem from="1664414256163" duration="105000" />
+      <workItem from="1664696660165" duration="37000" />
+      <workItem from="1664865439276" duration="841000" />
+      <workItem from="1664951292715" duration="1391000" />
+      <workItem from="1665031208723" duration="869000" />
     </task>
     <task id="LOCAL-00171" summary="upgrade straw jar">
       <created>1637487758999</created>
@@ -628,7 +627,14 @@
       <option name="project" value="LOCAL" />
       <updated>1662406477144</updated>
     </task>
-    <option name="localTasksCounter" value="219" />
+    <task id="LOCAL-00219" summary="update straw">
+      <created>1664414350663</created>
+      <option name="number" value="00219" />
+      <option name="presentableId" value="LOCAL-00219" />
+      <option name="project" value="LOCAL" />
+      <updated>1664414350663</updated>
+    </task>
+    <option name="localTasksCounter" value="220" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -673,11 +679,11 @@
     <MESSAGE value="code cleanup" />
     <MESSAGE value="implement LL inter only matrix" />
     <MESSAGE value="incorporate scaling option, use int target vector, return balanced matrix" />
-    <MESSAGE value="update straw" />
     <MESSAGE value="update straw, change iterator" />
     <MESSAGE value="bug fix for exporting" />
     <MESSAGE value="symm test" />
-    <option name="LAST_COMMIT_MESSAGE" value="symm test" />
+    <MESSAGE value="update straw" />
+    <option name="LAST_COMMIT_MESSAGE" value="update straw" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />

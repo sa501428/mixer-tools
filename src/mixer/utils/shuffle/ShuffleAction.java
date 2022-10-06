@@ -141,18 +141,18 @@ public class ShuffleAction {
 
         final ShuffledIndices[] globalAllIndices = new ShuffledIndices[2];
         Random gen = new Random(random.nextLong());
-        globalAllIndices[0] = getShuffledByClusterIndices(clusterToRowIndices, false, gen);
-        globalAllIndices[1] = getShuffledByClusterIndices(clusterToColIndices, false, gen);
+        globalAllIndices[0] = getShuffledByClusterIndices(clusterToRowIndices, gen);
+        globalAllIndices[1] = getShuffledByClusterIndices(clusterToColIndices, gen);
 
         ParallelizedMixerTools.launchParallelizedCode(() -> {
             int k = currRowIndex.getAndIncrement();
             AggregateMatrix aggregateForThread = new AggregateMatrix();
             while (k < numRounds) {
                 Random generator = new Random(seeds[k]);
-                ShuffledIndices allRowIndices = getShuffledByClusterIndices(clusterToRowIndices, false, generator);
+                ShuffledIndices allRowIndices = getShuffledByClusterIndices(clusterToRowIndices, generator);
                 ShuffledIndices allColIndices = allRowIndices;
                 if (!isIntra) {
-                    allColIndices = getShuffledByClusterIndices(clusterToColIndices, false, generator);
+                    allColIndices = getShuffledByClusterIndices(clusterToColIndices, generator);
                 }
 
                 double[][] matrix = getShuffledMatrix(interMatrix, allRowIndices.allIndices, allColIndices.allIndices);
@@ -174,7 +174,7 @@ public class ShuffleAction {
     }
 
     private ShuffledIndices getShuffledByClusterIndices(Map<Integer, List<Integer>> clusterToIndices,
-                                                        boolean isBackground, Random generator) {
+                                                        Random generator) {
         List<Integer> allIndices = new ArrayList<>();
 
         List<Integer> order = new ArrayList<>(clusterToIndices.keySet());
@@ -184,8 +184,8 @@ public class ShuffleAction {
         List<Integer> boundaries = new ArrayList<>();
         boundaries.add(count);
 
-        for (Integer index : order) {
-            List<Integer> indexList = new ArrayList<>(clusterToIndices.get(index));
+        for (Integer clusterID : order) {
+            List<Integer> indexList = new ArrayList<>(clusterToIndices.get(clusterID));
             Collections.shuffle(indexList, generator);
             int numToUse = (indexList.size() / compressionFactor) * compressionFactor;
             for (int z = 0; z < numToUse; z++) {
@@ -194,12 +194,8 @@ public class ShuffleAction {
             count += (numToUse / compressionFactor);
             boundaries.add(count);
         }
-        if (isBackground) {
-            Collections.shuffle(allIndices, generator);
-            return new ShuffledIndices(allIndices, new Integer[]{0, count});
-        }
-        Integer[] output = new Integer[boundaries.size()];
-        return new ShuffledIndices(allIndices, boundaries.toArray(output));
+
+        return new ShuffledIndices(allIndices, boundaries.toArray(new Integer[0]), order.toArray(new Integer[0]));
     }
 
     private double[][] getShuffledMatrix(HiCMatrix interMatrix, List<Integer> allRowIndices, List<Integer> allColIndices) {

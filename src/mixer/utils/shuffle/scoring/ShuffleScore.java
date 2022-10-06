@@ -52,9 +52,9 @@ public abstract class ShuffleScore {
     protected abstract float score(Integer[] rBounds, Integer[] cBounds);
 
     protected String getKey(int rI, int cI) {
-        if (rI <= cI) {
-            return rI + "_" + cI;
-        }
+        //if (rI <= cI) {
+        //    return rI + "_" + cI;
+        //}
         //return cI+"_"+rI;
         return rI + "_" + cI;
     }
