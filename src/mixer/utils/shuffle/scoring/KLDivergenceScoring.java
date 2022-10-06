@@ -24,19 +24,22 @@
 
 package mixer.utils.shuffle.scoring;
 
+import mixer.utils.matrix.ShuffledIndices;
+
 import java.util.HashMap;
 import java.util.Map;
 
 public class KLDivergenceScoring extends ShuffleScore {
     private final boolean matrixIsP;
 
-    public KLDivergenceScoring(float[][] matrix, Integer[] rowBounds, Integer[] colBounds, boolean matrixIsP) {
-        super(matrix, rowBounds, colBounds);
+    public KLDivergenceScoring(float[][] matrix, ShuffledIndices rowBounds, ShuffledIndices colBounds,
+                               boolean matrixIsP, boolean useSymmetry) {
+        super(matrix, rowBounds, colBounds, useSymmetry);
         this.matrixIsP = matrixIsP;
     }
 
     @Override
-    protected float score(Integer[] rBounds, Integer[] cBounds) {
+    protected float score(Integer[] rBounds, Integer[] cBounds, Integer[] rIDs, Integer[] cIDs) {
         Map<String, Double> sumMap = new HashMap<>();
         Map<String, Long> numRegionMap = new HashMap<>();
         populateMeanMap(sumMap, numRegionMap);

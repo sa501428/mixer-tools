@@ -56,19 +56,21 @@ public class ShuffleAction {
     private Chromosome[] chromosomes;
     private HiCMatrix.INTRA_TYPE intraType = HiCMatrix.INTRA_TYPE.DEFAULT;
     private boolean isIntra = false;
+    private final boolean useSymmetry;
 
     public ShuffleAction(Dataset ds, NormalizationType norm, int resolution, int compressionFactor,
-                         SimilarityMetric metric) {
+                         SimilarityMetric metric, boolean useSymmetry) {
         this.resolution = resolution;
         this.compressionFactor = compressionFactor;
         this.ds = ds;
         this.norm = norm;
         this.metric = metric;
+        this.useSymmetry = useSymmetry;
     }
 
     public ShuffleAction(Dataset ds, NormalizationType norm, int resolution, int compressionFactor,
-                         SimilarityMetric metric, InterOnlyMatrix.INTRA_TYPE intraType) {
-        this(ds, norm, resolution, compressionFactor, metric);
+                         SimilarityMetric metric, InterOnlyMatrix.INTRA_TYPE intraType, boolean useSymmetry) {
+        this(ds, norm, resolution, compressionFactor, metric, useSymmetry);
         isIntra = true;
         this.intraType = intraType;
         chromosomes = ds.getChromosomeHandler().getAutosomalChromosomesArray();
@@ -170,7 +172,7 @@ public class ShuffleAction {
 
         aggregate.scaleForNumberOfRounds(numRounds);
         aggregate.saveToPNG(outfolder, name);
-        scoreContainer.updateAggregateScores(aggregate, globalAllIndices, mapIndex);
+        scoreContainer.updateAggregateScores(aggregate, globalAllIndices, mapIndex, useSymmetry);
     }
 
     private ShuffledIndices getShuffledByClusterIndices(Map<Integer, List<Integer>> clusterToIndices,

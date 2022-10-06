@@ -24,16 +24,18 @@
 
 package mixer.utils.shuffle.scoring;
 
+import mixer.utils.matrix.ShuffledIndices;
+
 import java.util.HashMap;
 import java.util.Map;
 
 public class VarianceScoring extends ShuffleScore {
-    public VarianceScoring(float[][] matrix, Integer[] rBounds, Integer[] cBounds) {
-        super(matrix, rBounds, cBounds);
+    public VarianceScoring(float[][] matrix, ShuffledIndices rBounds, ShuffledIndices cBounds, boolean useSymmetry) {
+        super(matrix, rBounds, cBounds, useSymmetry);
     }
 
     @Override
-    protected float score(Integer[] rBounds, Integer[] cBounds) {
+    protected float score(Integer[] rBounds, Integer[] cBounds, Integer[] rIDs, Integer[] cIDs) {
         double sumOfSquareErr = 0;
         Map<String, Double> sumMap = new HashMap<>();
         Map<String, Long> numRegionMap = new HashMap<>();
