@@ -201,23 +201,7 @@ public class CommandLineParserForMixer extends CmdLineParser {
         return null;
     }
 
-    public boolean getHasTranslocation() {
-        return optionToBoolean(translocationOption);
-    }
-
     public boolean getENCODEOption() {
         return optionToBoolean(encodeOption);
-    }
-
-    public boolean getLogOption() {
-        return optionToBoolean(logOption);
-    }
-
-    public boolean getZScoreOption() {
-        return optionToBoolean(zScoreOption);
-    }
-
-    public boolean getScaleOption() {
-        return optionToBoolean(scaleOption);
     }
 }
