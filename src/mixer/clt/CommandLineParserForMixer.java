@@ -52,11 +52,7 @@ public class CommandLineParserForMixer extends CmdLineParser {
     private final Option sliceWindowOption = addIntegerOption('w', "window");
     private final Option seedOption = addIntegerOption("seed");
     private final Option sliceCompareOption = addStringOption("compare");
-    private final Option translocationOption = addBooleanOption("has-translocation");
     private final Option encodeOption = addBooleanOption("encode-mode");
-    private final Option logOption = addBooleanOption("log");
-    private final Option zScoreOption = addBooleanOption("zscore");
-    private final Option scaleOption = addBooleanOption("scale");
     private final Option mapTypeOption = addIntegerOption("type");
     private final Option correlationTypeOption = addIntegerOption("corr");
 
