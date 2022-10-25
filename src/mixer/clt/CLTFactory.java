@@ -51,8 +51,6 @@ public class CLTFactory {
         cmd = cmd.toLowerCase();
         if (cmd.startsWith("slice") || cmd.startsWith("dice")) {
             return new Slice(cmd);
-        } else if (cmd.equals("magic")) {
-            return new Magic(cmd);
         } else if (cmd.equals("walk")) {
             return new ChromosomeWalker();
         } else if (cmd.contains("shuffle") || cmd.contains("umap")) {
