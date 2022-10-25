@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2011-2021 Rice University, Baylor College of Medicine, Aiden Lab
+ * Copyright (c) 2011-2022 Rice University, Baylor College of Medicine, Aiden Lab
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -48,12 +48,12 @@ public class InterOnlyMatrix extends HiCMatrix {
         Chromosome[] rowsChromosomes, colsChromosomes;
         switch (mapType) {
             case SKIP_BY_TWOS: // but start with CHR 1 separate
-                rowsChromosomes = chromosomeHandler.splitAutosomesAndSkipByTwos().getFirst();
-                colsChromosomes = chromosomeHandler.splitAutosomesAndSkipByTwos().getSecond();
+                rowsChromosomes = chromosomeHandler.splitAutosomesAndSkipByTwos().a;
+                colsChromosomes = chromosomeHandler.splitAutosomesAndSkipByTwos().b;
                 break;
             case FIRST_HALF_VS_SECOND_HALF:
-                rowsChromosomes = chromosomeHandler.splitAutosomesIntoHalves().getFirst();
-                colsChromosomes = chromosomeHandler.splitAutosomesIntoHalves().getSecond();
+                rowsChromosomes = chromosomeHandler.splitAutosomesIntoHalves().a;
+                colsChromosomes = chromosomeHandler.splitAutosomesIntoHalves().b;
                 break;
             case ODDS_VS_EVENS:
             default:

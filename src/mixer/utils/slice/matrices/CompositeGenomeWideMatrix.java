@@ -35,18 +35,17 @@ import mixer.algos.Slice;
 import mixer.utils.common.ArrayTools;
 import mixer.utils.common.FloatMatrixTools;
 import mixer.utils.common.ZScoreTools;
+import mixer.utils.drive.DriveMatrix;
 import mixer.utils.slice.cleaning.BadIndexFinder;
 import mixer.utils.slice.cleaning.SimilarityMatrixTools;
 import mixer.utils.slice.cleaning.SliceMatrixCleaner;
-import mixer.utils.slice.gmm.SimpleScatterPlot;
 import mixer.utils.slice.structures.SliceUtils;
 import mixer.utils.slice.structures.SubcompartmentInterval;
-import robust.concurrent.kmeans.clustering.Cluster;
 
 import java.io.File;
 import java.util.*;
 
-public abstract class CompositeGenomeWideMatrix {
+public abstract class CompositeGenomeWideMatrix extends DriveMatrix {
     protected final NormalizationType[] norms;
     protected final int resolution;
     protected final Map<Integer, SubcompartmentInterval> rowIndexToIntervalMap = new HashMap<>();
@@ -54,7 +53,6 @@ public abstract class CompositeGenomeWideMatrix {
     protected final Random generator = new Random(2436);
     protected final File outputDirectory;
     private MatrixAndWeight gwCleanMatrix, projectedData = null;
-    private float[][] umapProjection;
     protected final BadIndexFinder badIndexLocations;
     protected final int maxClusterSizeExpected;
 
@@ -107,18 +105,10 @@ public abstract class CompositeGenomeWideMatrix {
             projectedData = new MatrixAndWeight(SimilarityMatrixTools.getCosinePearsonCorrMatrix(gwCleanMatrix.matrix,
                     50, generator.nextLong()), gwCleanMatrix.weights);
 
-            umapProjection = SimpleScatterPlot.getUmapProjection2D(projectedData.matrix);
 
             File file2 = new File(outputDirectory, "corr_slice_matrix.npy");
             MatrixTools.saveMatrixTextNumpy(file2.getAbsolutePath(), projectedData.matrix);
-
-            runUmapAndSaveMatricesByChrom(outputDirectory);
         }
-
-        /*
-        projectedData = MatrixImputer.imputeUntilNoNansOnlyNN(gwCleanMatrix);
-        //corrData = SimilarityMatrixTools.getCosinePearsonCorrMatrix(gwCleanMatrix, 50, generator.nextLong());
-        */
     }
 
     protected int[][] getGenomeIndices() {
@@ -133,68 +123,9 @@ public abstract class CompositeGenomeWideMatrix {
         return coordinates;
     }
 
+    @Override
     public void inPlaceScaleSqrtWeightCol() {
         ZScoreTools.inPlaceScaleSqrtWeightCol(gwCleanMatrix.matrix, gwCleanMatrix.weights);
-    }
-
-
-    public void runUmapAndSaveMatricesByChrom(File outputDirectory) {
-        int[] indices = new int[umapProjection.length];
-        for (int i = 0; i < indices.length; i++) {
-            SubcompartmentInterval interval = rowIndexToIntervalMap.get(i);
-            indices[i] = interval.getChrIndex();
-        }
-
-        plotUmapProjection(outputDirectory, indices, "chrom");
-    }
-
-    public void plotUmapProjection(File outputDirectory, List<List<Integer>> colorList, String stem) {
-        int[] colors = new int[umapProjection.length];
-        Arrays.fill(colors, -1);
-        for (int index = 0; index < colorList.size(); index++) {
-            for (Integer val : colorList.get(index)) {
-                colors[val] = index;
-            }
-        }
-
-        plotUmapProjection(outputDirectory, colors, stem);
-    }
-
-    public void plotUmapProjection(File outputDirectory, int[] colors, String stem) {
-        SimpleScatterPlot plotter = new SimpleScatterPlot(umapProjection);
-        File outfile = new File(outputDirectory, "umap_" + stem);
-        plotter.plot(colors, outfile.getAbsolutePath());
-    }
-
-    public void processKMeansClusteringResult(Cluster[] clusters,
-                                              GenomeWide1DList<SubcompartmentInterval> subcompartments) {
-
-        Set<SubcompartmentInterval> subcompartmentIntervals = new HashSet<>();
-        if (MixerGlobals.printVerboseComments) {
-            System.out.println("GW Composite data vs clustered into " + clusters.length + " clusters");
-        }
-
-        int genomewideCompartmentID = 0;
-        for (int z = 0; z < clusters.length; z++) {
-            Cluster cluster = clusters[z];
-            int currentClusterID = ++genomewideCompartmentID;
-
-            if (MixerGlobals.printVerboseComments) {
-                System.out.println("Size of cluster " + currentClusterID + " - " + cluster.getMemberIndexes().length);
-            }
-
-            for (int i : cluster.getMemberIndexes()) {
-                if (rowIndexToIntervalMap.containsKey(i)) {
-                    SubcompartmentInterval interv = rowIndexToIntervalMap.get(i);
-                    if (interv != null) {
-                        subcompartmentIntervals.add(generateNewSubcompartment(interv, currentClusterID));
-                    }
-                }
-            }
-        }
-
-        subcompartments.addAll(new ArrayList<>(subcompartmentIntervals));
-        SliceUtils.reSort(subcompartments);
     }
 
     public synchronized void processGMMClusteringResult(int[] clusterID,
@@ -213,12 +144,6 @@ public abstract class CompositeGenomeWideMatrix {
 
         subcompartments.addAll(new ArrayList<>(subcompartmentIntervals));
         SliceUtils.reSort(subcompartments);
-    }
-
-    protected SubcompartmentInterval generateNewSubcompartment(SubcompartmentInterval interv, int currentClusterID) {
-        SubcompartmentInterval newInterv = (SubcompartmentInterval) interv.deepClone();
-        newInterv.setClusterID(currentClusterID);
-        return newInterv;
     }
 
     public float[][] getData(boolean getCorrMatrix) {

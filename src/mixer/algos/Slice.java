@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2011-2021 Rice University, Baylor College of Medicine, Aiden Lab
+ * Copyright (c) 2011-2022 Rice University, Baylor College of Medicine, Aiden Lab
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@ package mixer.algos;
 
 import javastraw.reader.Dataset;
 import javastraw.reader.basics.ChromosomeHandler;
+import javastraw.reader.norm.NormalizationPicker;
 import javastraw.reader.type.NormalizationType;
 import javastraw.tools.HiCFileTools;
 import mixer.clt.CommandLineParserForMixer;
@@ -34,7 +35,9 @@ import mixer.utils.slice.cleaning.SliceMatrixCleaner;
 import mixer.utils.slice.kmeans.FullGenomeOEWithinClusters;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 /**
  * experimental code
@@ -80,7 +83,7 @@ public class Slice extends MixerCLT {
         for (String path : args[1].split(",")) {
             System.out.println("Extracting " + path);
             inputHicFilePaths.add(path);
-            datasetList.add(HiCFileTools.extractDatasetForCLT(path, true, false));
+            datasetList.add(HiCFileTools.extractDatasetForCLT(path, false, false, true));
         }
 
         try {
@@ -125,25 +128,12 @@ public class Slice extends MixerCLT {
         List<NormalizationType[]> normsList = new ArrayList<>();
         for (Dataset ds : datasetList) {
             NormalizationType[] norms = new NormalizationType[3];
-            Map<String, NormalizationType> normsForDataset = ds.getNormalizationTypesMap();
-            norms[INTRA_SCALE_INDEX] = getNormInOrder(new String[]{"SCALE", "KR"}, normsForDataset);
-            norms[INTER_SCALE_INDEX] = getNormInOrder(new String[]{"INTER_SCALE", "INTER_KR"}, normsForDataset);
-            norms[GW_SCALE_INDEX] = getNormInOrder(new String[]{"GW_SCALE", "GW_KR"}, normsForDataset);
+            norms[INTRA_SCALE_INDEX] = NormalizationPicker.getFirstValidNormInThisOrder(ds, new String[]{"SCALE", "KR"});
+            norms[INTER_SCALE_INDEX] = NormalizationPicker.getFirstValidNormInThisOrder(ds, new String[]{"INTER_SCALE", "INTER_KR"});
+            norms[GW_SCALE_INDEX] = NormalizationPicker.getFirstValidNormInThisOrder(ds, new String[]{"GW_SCALE", "GW_KR"});
             normsList.add(norms);
         }
         return normsList;
-    }
-
-    private NormalizationType getNormInOrder(String[] keys, Map<String, NormalizationType> normsForDataset) {
-        for (String key : keys) {
-            if (normsForDataset.containsKey(key)) {
-                return normsForDataset.get(key);
-            }
-        }
-
-        System.err.println(Arrays.toString(keys) + " not found");
-        System.exit(11);
-        return null;
     }
 
     @Override

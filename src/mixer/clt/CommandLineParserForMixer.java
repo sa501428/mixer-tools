@@ -52,7 +52,6 @@ public class CommandLineParserForMixer extends CmdLineParser {
     private final Option sliceWindowOption = addIntegerOption('w', "window");
     private final Option seedOption = addIntegerOption("seed");
     private final Option sliceCompareOption = addStringOption("compare");
-    private final Option translocationOption = addBooleanOption("has-translocation");
     private final Option encodeOption = addBooleanOption("encode-mode");
     private final Option mapTypeOption = addIntegerOption("type");
     private final Option correlationTypeOption = addIntegerOption("corr");
@@ -196,10 +195,6 @@ public class CommandLineParserForMixer extends CmdLineParser {
             System.exit(7);
         }
         return null;
-    }
-
-    public boolean getHasTranslocation() {
-        return optionToBoolean(translocationOption);
     }
 
     public boolean getENCODEOption() {

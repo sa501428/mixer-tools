@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2011-2021 Rice University, Baylor College of Medicine, Aiden Lab
+ * Copyright (c) 2011-2022 Rice University, Baylor College of Medicine, Aiden Lab
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,7 @@
 package mixer.utils.slice.gmm;
 
 import mixer.utils.slice.structures.SubcompartmentColors;
-import tagbio.umap.Umap;
+import mixer.utils.umap.UmapProjection;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -46,23 +46,9 @@ public class SimpleScatterPlot {
     private String stem = "";
 
     public SimpleScatterPlot(float[][] points) {
-        this.points = getUmapProjection2D(points);
+        this.points = UmapProjection.get2DProjection(points);
         if (points[0].length > 2) stem = "_umap";
         updateBounds();
-    }
-
-    public static float[][] getUmapProjection2D(float[][] points) {
-        if (points[0].length > 2) {
-            final Umap umap = new Umap();
-            umap.setNumberComponents(2);
-            umap.setNumberNearestNeighbours(50); // 50 // 15 -> 50 for more global picture
-            umap.setThreads(10);
-            umap.setMinDist(0.5f); // 0.2 ->0.8 -> 0.5  //0.1f -> 0.2f for more general features
-            umap.setVerbose(false);
-            umap.setSeed(0L);
-            return umap.fitTransform(points);
-        }
-        return points;
     }
 
     private void updateBounds() {

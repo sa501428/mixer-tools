@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2011-2021 Rice University, Baylor College of Medicine, Aiden Lab
+ * Copyright (c) 2011-2022 Rice University, Baylor College of Medicine, Aiden Lab
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -46,7 +46,7 @@ public class ExtractionB4 {
     public static void extract() {
         Dataset ds = HiCFileTools.extractDatasetForCLT(
                 "/Users/mshamim/Desktop/hicfiles/gm12878_rh14_30.hic",
-                true, false);
+                false, false, true);
         Chromosome chrom19 = ds.getChromosomeHandler().getChromosomeFromName("19");
 
         final MatrixZoomData zd = HiCFileTools.getMatrixZoomData(ds, chrom19, chrom19, RESOLUTION);
@@ -57,7 +57,7 @@ public class ExtractionB4 {
                     type, 10f,
                     ExtractingOEDataUtils.ThresholdType.TRUE_OE_LOG,
                     //ExtractingOEDataUtils.ThresholdType.TRUE_OE,
-                    true, 1, 0, true);
+                    true, true, 1, 0, true);
             removeEmptyValues(matrix);
             NearDiagonalTrim.nanFill(chrom19, matrix, RESOLUTION);
             float[] sums = getAbsRowSums(matrix);

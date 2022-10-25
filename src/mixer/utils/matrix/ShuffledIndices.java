@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2011-2021 Rice University, Baylor College of Medicine, Aiden Lab
+ * Copyright (c) 2011-2022 Rice University, Baylor College of Medicine, Aiden Lab
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,9 +29,11 @@ import java.util.List;
 public class ShuffledIndices {
     public final List<Integer> allIndices;
     public final Integer[] boundaries;
+    public final Integer[] ids;
 
-    public ShuffledIndices(List<Integer> allIndices, Integer[] boundaries) {
+    public ShuffledIndices(List<Integer> allIndices, Integer[] boundaries, Integer[] ids) {
         this.allIndices = allIndices;
         this.boundaries = boundaries;
+        this.ids = ids;
     }
 }

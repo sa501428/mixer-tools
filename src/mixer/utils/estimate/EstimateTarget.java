@@ -25,10 +25,10 @@
 package mixer.utils.estimate;
 
 import javastraw.reader.Dataset;
-import javastraw.reader.Matrix;
 import javastraw.reader.basics.Chromosome;
 import javastraw.reader.block.Block;
 import javastraw.reader.block.ContactRecord;
+import javastraw.reader.mzd.Matrix;
 import javastraw.reader.mzd.MatrixZoomData;
 import javastraw.reader.type.HiCZoom;
 import javastraw.reader.type.NormalizationType;
@@ -64,7 +64,7 @@ public class EstimateTarget {
                 long rowEnd = chromosomes[i].getLength() / resolution;
                 long columnEnd = chromosomes[j].getLength() / resolution;
                 List<Block> blocks = zd.getNormalizedBlocksOverlapping(0, 0, rowEnd, columnEnd, norm,
-                        false, false);
+                        false);
 
                 for (Block block : blocks) {
                     for (ContactRecord cr : block.getContactRecords()) {

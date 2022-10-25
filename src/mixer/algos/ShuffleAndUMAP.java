@@ -62,7 +62,7 @@ public class ShuffleAndUMAP extends MixerCLT {
     private final boolean useIntraMap, useGWMap;
     private InterOnlyMatrix.INTRA_TYPE intraType;
     private SimilarityMetric metric = null;
-    private final boolean doUMAP, doShuffle;
+    private final boolean doUMAP, doShuffle, useSymmetry;
 
     // subcompartment lanscape identification via clustering enrichment
     public ShuffleAndUMAP(String name) {
@@ -72,6 +72,7 @@ public class ShuffleAndUMAP extends MixerCLT {
         useIntraMap = name.contains("intra");
         doShuffle = name.contains("shuffle");
         doUMAP = name.contains("umap");
+        useSymmetry = name.contains("symm");
     }
 
     @Override
@@ -80,7 +81,7 @@ public class ShuffleAndUMAP extends MixerCLT {
             printUsageAndExit(51);
         }
 
-        ds = HiCFileTools.extractDatasetForCLT(args[1], true, false);
+        ds = HiCFileTools.extractDatasetForCLT(args[1], false, false, true);
 
         referenceBedFiles = args[2].split(",");
         outputDirectory = HiCFileTools.createValidDirectory(args[3]);
@@ -127,10 +128,10 @@ public class ShuffleAndUMAP extends MixerCLT {
                 ShuffleAction matrix;
                 if (useIntraMap) {
                     matrix = new ShuffleAction(ds, norm, resolution, compressionFactor,
-                            metric, intraType);
+                            metric, intraType, useSymmetry);
                     matrix.runIntraAnalysis(subcompartments, newFolder, generator);
                 } else {
-                    matrix = new ShuffleAction(ds, norm, resolution, compressionFactor, metric);
+                    matrix = new ShuffleAction(ds, norm, resolution, compressionFactor, metric, useSymmetry);
                     matrix.runInterAnalysis(subcompartments, newFolder, generator);
                 }
                 matrix.savePlotsAndResults(newFolder, prefix[i]);

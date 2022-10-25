@@ -24,47 +24,41 @@
 
 package mixer.utils.shuffle.scoring;
 
+import mixer.utils.matrix.ShuffledIndices;
+
 import java.util.HashMap;
 import java.util.Map;
 
 public class KLDivergenceScoring extends ShuffleScore {
     private final boolean matrixIsP;
 
-    public KLDivergenceScoring(float[][] matrix, Integer[] rowBounds, Integer[] colBounds, boolean matrixIsP) {
-        super(matrix, rowBounds, colBounds);
+    public KLDivergenceScoring(float[][] matrix, ShuffledIndices rowBounds, ShuffledIndices colBounds,
+                               boolean matrixIsP, boolean useSymmetry) {
+        super(matrix, rowBounds, colBounds, useSymmetry);
         this.matrixIsP = matrixIsP;
     }
 
     @Override
-    protected float score(Integer[] rBounds, Integer[] cBounds) {
-        double sumTotal = 0;
-        Map<String, Double> regionalAverage = new HashMap<>();
-        for (int rI = 0; rI < rBounds.length - 1; rI++) {
-            for (int cI = 0; cI < cBounds.length - 1; cI++) {
-                double sum = 0;
-                int numVals = 0;
-                for (int i = rBounds[rI]; i < rBounds[rI + 1]; i++) {
-                    for (int j = cBounds[cI]; j < cBounds[cI + 1]; j++) {
-                        sum += matrix[i][j];
-                        numVals++;
-                    }
-                }
-                sumTotal += sum;
-                regionalAverage.put(getKey(rI, cI), sum / numVals);
-            }
-        }
+    protected float score(Integer[] rBounds, Integer[] cBounds, Integer[] rIDs, Integer[] cIDs) {
+        Map<String, Double> sumMap = new HashMap<>();
+        Map<String, Long> numRegionMap = new HashMap<>();
+        populateMeanMap(sumMap, numRegionMap);
+        double sumTotal = getTotalSum(sumMap);
 
         double klDivergence = 0;
         for (int rI = 0; rI < rBounds.length - 1; rI++) {
             for (int cI = 0; cI < cBounds.length - 1; cI++) {
-                double q = regionalAverage.get(getKey(rI, cI)) / sumTotal;
-                for (int i = rBounds[rI]; i < rBounds[rI + 1]; i++) {
-                    for (int j = cBounds[cI]; j < cBounds[cI + 1]; j++) {
-                        double p = matrix[i][j] / sumTotal;
-                        if (matrixIsP) {
-                            klDivergence += p * Math.log(p / q);
-                        } else {
-                            klDivergence += q * Math.log(q / p);
+                String key = getKey(rI, cI);
+                double q = (sumMap.get(key) / numRegionMap.get(key)) / sumTotal;
+                if (numRegionMap.get(key) > 0) {
+                    for (int i = rBounds[rI]; i < rBounds[rI + 1]; i++) {
+                        for (int j = cBounds[cI]; j < cBounds[cI + 1]; j++) {
+                            double p = matrix[i][j] / sumTotal;
+                            if (matrixIsP) {
+                                klDivergence += p * Math.log(p / q);
+                            } else {
+                                klDivergence += q * Math.log(q / p);
+                            }
                         }
                     }
                 }
@@ -74,7 +68,11 @@ public class KLDivergenceScoring extends ShuffleScore {
         return (float) klDivergence;
     }
 
-    private String getKey(int rI, int cI) {
-        return rI + "_" + cI;
+    private double getTotalSum(Map<String, Double> sumMap) {
+        double total = 0;
+        for (Double val : sumMap.values()) {
+            total += val;
+        }
+        return total;
     }
 }

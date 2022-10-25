@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2011-2021 Rice University, Baylor College of Medicine, Aiden Lab
+ * Copyright (c) 2011-2022 Rice University, Baylor College of Medicine, Aiden Lab
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -61,7 +61,7 @@ public class Network extends MixerCLT {
 
         inputBedpeFile = args[2];
         outputPath = args[3];
-        ds = HiCFileTools.extractDatasetForCLT(args[1], true, false);
+        ds = HiCFileTools.extractDatasetForCLT(args[1], false, false, true);
 
         try {
             int specifiedResolution = mixerParser.getMultipleResolutionOptions().get(0);

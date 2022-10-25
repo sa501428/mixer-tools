@@ -46,11 +46,11 @@ public class ScoreContainer {
         ratios = new float[numMaps][numScores];
     }
 
-    public static float[] updateAggMatrixScores(float[][] matrix, Integer[] rowBounds, Integer[] colBounds,
-                                                boolean isBaseline) {
+    public static float[] updateAggMatrixScores(float[][] matrix, ShuffledIndices rowBounds, ShuffledIndices colBounds,
+                                                boolean isBaseline, boolean useSymmetry) {
         float[] scores = new float[2];
-        scores[0] = (new VarianceScoring(matrix, rowBounds, colBounds)).score(isBaseline);
-        scores[1] = (new KLDivergenceScoring(matrix, rowBounds, colBounds, true)).score(isBaseline);
+        scores[0] = (new VarianceScoring(matrix, rowBounds, colBounds, useSymmetry)).score(isBaseline);
+        scores[1] = (new KLDivergenceScoring(matrix, rowBounds, colBounds, true, useSymmetry)).score(isBaseline);
         return scores;
     }
 
@@ -63,10 +63,13 @@ public class ScoreContainer {
         }
     }
 
-    public void updateAggregateScores(AggregateMatrix aggregate, ShuffledIndices[] globalAllIndices, int mapIndex) {
+    public void updateAggregateScores(AggregateMatrix aggregate, ShuffledIndices[] globalAllIndices, int mapIndex,
+                                      boolean useSymmetry) {
         float[][] aggMatrix = aggregate.getFloatMatrix();
-        baselines[mapIndex] = updateAggMatrixScores(aggMatrix, globalAllIndices[0].boundaries, globalAllIndices[1].boundaries, true);
-        shuffled[mapIndex] = updateAggMatrixScores(aggMatrix, globalAllIndices[0].boundaries, globalAllIndices[1].boundaries, false);
+        baselines[mapIndex] = updateAggMatrixScores(aggMatrix, globalAllIndices[0],
+                globalAllIndices[1], true, useSymmetry);
+        shuffled[mapIndex] = updateAggMatrixScores(aggMatrix, globalAllIndices[0],
+                globalAllIndices[1], false, useSymmetry);
     }
 
     public void savePlotsAndResults(File outfolder, String prefix, String[] names) {

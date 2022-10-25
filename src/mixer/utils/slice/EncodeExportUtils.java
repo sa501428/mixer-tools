@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2011-2021 Rice University, Baylor College of Medicine, Aiden Lab
+ * Copyright (c) 2011-2022 Rice University, Baylor College of Medicine, Aiden Lab
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,8 +25,8 @@
 package mixer.utils.slice;
 
 import mixer.MixerGlobals;
+import mixer.utils.drive.DriveMatrix;
 import mixer.utils.slice.kmeans.KmeansEvaluator;
-import mixer.utils.slice.matrices.SliceMatrix;
 import mixer.utils.slice.structures.ENCODESubcompartmentInterval;
 import mixer.utils.slice.structures.SliceUtils;
 import mixer.utils.slice.structures.SubcompartmentInterval;
@@ -37,7 +37,7 @@ import java.util.*;
 import java.util.stream.IntStream;
 
 public class EncodeExportUtils {
-    public static void exportSubcompartments(SliceMatrix sliceMatrix, Map<Integer, List<List<Integer>>> kmeansIndicesMap,
+    public static void exportSubcompartments(DriveMatrix sliceMatrix, Map<Integer, List<List<Integer>>> kmeansIndicesMap,
                                              KmeansEvaluator evaluator, String prefix, File outputDirectory,
                                              int startingClusterSizeK) {
 

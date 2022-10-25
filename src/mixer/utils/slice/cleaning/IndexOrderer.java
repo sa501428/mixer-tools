@@ -77,7 +77,7 @@ public class IndexOrderer {
             try {
                 float[][] matrix = HiCFileTools.getOEMatrixForChromosome(ds, zd, chrom, lowres,
                         normalizationType, 100f, ExtractingOEDataUtils.ThresholdType.TRUE_OE,
-                        true, 1, 0, true);
+                        true, true, 1, 0, true);
                 Set<Integer> badIndices = badIndexLocations.getBadIndices(chrom);
                 int[] newOrderIndexes = getNewOrderOfIndices(chrom, matrix, badIndices);
                 int[] hiResNewOrderIndexes = convertToHigherRes(newOrderIndexes, chrom);

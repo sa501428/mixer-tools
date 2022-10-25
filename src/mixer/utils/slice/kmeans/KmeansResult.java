@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2011-2021 Rice University, Baylor College of Medicine, Aiden Lab
+ * Copyright (c) 2011-2022 Rice University, Baylor College of Medicine, Aiden Lab
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,11 +27,11 @@ package mixer.utils.slice.kmeans;
 import javastraw.feature1D.GenomeWide1DList;
 import javastraw.reader.basics.ChromosomeHandler;
 import mixer.MixerGlobals;
+import mixer.utils.drive.DriveMatrix;
 import mixer.utils.rougheval.SubsamplingManager;
 import mixer.utils.similaritymeasures.RobustCorrelationSimilarity;
 import mixer.utils.similaritymeasures.RobustEuclideanDistance;
 import mixer.utils.similaritymeasures.RobustManhattanDistance;
-import mixer.utils.slice.matrices.CompositeGenomeWideMatrix;
 import mixer.utils.slice.structures.SubcompartmentInterval;
 import robust.concurrent.kmeans.clustering.Cluster;
 
@@ -97,7 +97,7 @@ public class KmeansResult {
         return output;
     }
 
-    public void processResultAndUpdateScoringMetrics(Cluster[] clusters, CompositeGenomeWideMatrix matrix,
+    public void processResultAndUpdateScoringMetrics(Cluster[] clusters, DriveMatrix matrix,
                                                      boolean useKMedians, boolean useCorrMatrix, long seed) {
         populateIndicesMap(clusters);
         matrix.processKMeansClusteringResult(clusters, finalCompartments);
@@ -121,7 +121,7 @@ public class KmeansResult {
         return maxVal;
     }
 
-    public double getWCSS(Cluster[] clusters, CompositeGenomeWideMatrix matrix,
+    public double getWCSS(Cluster[] clusters, DriveMatrix matrix,
                           boolean useCorr, boolean useKMedians) {
         double withinClusterSumOfSquares = 0;
 
@@ -146,7 +146,7 @@ public class KmeansResult {
         return withinClusterSumOfSquares;
     }
 
-    private float getSilhouette(Cluster[] clusters, CompositeGenomeWideMatrix matrix, boolean useCorr,
+    private float getSilhouette(Cluster[] clusters, DriveMatrix matrix, boolean useCorr,
                                 boolean useKMedians, long seed) {
         double score = 0;
         SubsamplingManager manager = new SubsamplingManager(clusters, matrix.getData(useCorr), useKMedians, seed);

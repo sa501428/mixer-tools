@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2011-2021 Rice University, Baylor College of Medicine, Aiden Lab
+ * Copyright (c) 2011-2022 Rice University, Baylor College of Medicine, Aiden Lab
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -56,11 +56,11 @@ public class IntraOnlyMatrix extends HiCMatrix {
             } else if (intraType == INTRA_TYPE.LOG_BASE_EXPECTED) {
                 allDataForRegion = HiCFileTools.getOEMatrixForChromosome(ds, zd, chr1, resolution,
                         norm, 10, ExtractingOEDataUtils.ThresholdType.LOG_BASE_EXP_OF_OBS,
-                        true, 1, 0, true);
+                        true, true, 1, 0, true);
             } else if (intraType == INTRA_TYPE.TRUE_OE) {
                 allDataForRegion = HiCFileTools.getOEMatrixForChromosome(ds, zd, chr1, resolution,
                         norm, 10, ExtractingOEDataUtils.ThresholdType.TRUE_OE,
-                        true, 1, 0, true);
+                        true, true, 1, 0, true);
             } else if (intraType == INTRA_TYPE.JUST_LOG) {
                 allDataForRegion = HiCFileTools.extractLocalBoundedRegionFloatMatrix(zd, 0, lengthChr1,
                         0, lengthChr2, lengthChr1, lengthChr2, norm, true);

@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2011-2021 Rice University, Baylor College of Medicine, Aiden Lab
+ * Copyright (c) 2011-2022 Rice University, Baylor College of Medicine, Aiden Lab
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,7 @@ package mixer.utils.slice.kmeans;
 
 import javastraw.reader.basics.ChromosomeHandler;
 import mixer.MixerGlobals;
-import mixer.utils.slice.matrices.CompositeGenomeWideMatrix;
+import mixer.utils.drive.DriveMatrix;
 import robust.concurrent.kmeans.clustering.Cluster;
 import robust.concurrent.kmeans.clustering.KMeansListener;
 import robust.concurrent.kmeans.clustering.RobustConcurrentKMeans;
@@ -39,7 +39,7 @@ public class GenomeWideKmeansRunner {
 
     private final float[][] matrix;
     private final ChromosomeHandler chromosomeHandler;
-    private final CompositeGenomeWideMatrix interMatrix;
+    private final DriveMatrix interMatrix;
     private final AtomicBoolean thisRunIsNotDone = new AtomicBoolean(true);
     private KmeansResult result = null;
 
@@ -47,7 +47,7 @@ public class GenomeWideKmeansRunner {
     private final boolean useKMedians;
 
     public GenomeWideKmeansRunner(ChromosomeHandler chromosomeHandler,
-                                  CompositeGenomeWideMatrix interMatrix,
+                                  DriveMatrix interMatrix,
                                   boolean useCorrMatrix, boolean useKmedians) {
         this.useCorrMatrix = useCorrMatrix;
         this.interMatrix = interMatrix;

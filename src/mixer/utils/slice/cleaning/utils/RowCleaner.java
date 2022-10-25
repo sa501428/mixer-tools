@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2011-2021 Rice University, Baylor College of Medicine, Aiden Lab
+ * Copyright (c) 2011-2022 Rice University, Baylor College of Medicine, Aiden Lab
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,6 @@ import mixer.MixerGlobals;
 import mixer.utils.slice.matrices.MatrixAndWeight;
 import mixer.utils.slice.structures.SubcompartmentInterval;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,24 +49,8 @@ public class RowCleaner extends DimensionCleaner {
             System.out.println("interMatrix.length " + matrix.length + " badIndices.size() " + badIndices.size());
         }
 
-        int counter = 0;
-        int[] newIndexToOrigIndex = new int[matrix.length - badIndices.size()];
-        for (int i = 0; i < matrix.length; i++) {
-            if (!badIndices.contains(i)) {
-                newIndexToOrigIndex[counter++] = i;
-            }
-        }
+        float[][] newMatrix = MatrixRowCleaner.makeNewMatrixAndUpdateIndices(matrix, original, badIndices);
 
-        float[][] newMatrix = new float[newIndexToOrigIndex.length][matrix[0].length];
-        Map<Integer, SubcompartmentInterval> newRowIndexToIntervalMap = new HashMap<>();
-        for (int i = 0; i < newMatrix.length; i++) {
-            int tempI = newIndexToOrigIndex[i];
-            System.arraycopy(matrix[tempI], 0, newMatrix[i], 0, newMatrix[0].length);
-            newRowIndexToIntervalMap.put(i, (SubcompartmentInterval) original.get(newIndexToOrigIndex[i]).deepClone());
-        }
-
-        original.clear();
-        original.putAll(newRowIndexToIntervalMap);
 
         return new MatrixAndWeight(newMatrix, weights);
     }

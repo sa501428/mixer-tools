@@ -36,6 +36,7 @@ import mixer.utils.slice.matrices.CompositeGenomeWideMatrix;
 import mixer.utils.slice.matrices.SliceMatrix;
 import mixer.utils.slice.structures.SliceUtils;
 import mixer.utils.slice.structures.SubcompartmentInterval;
+import mixer.utils.umap.UmapProjection;
 
 import java.io.File;
 import java.util.HashMap;
@@ -49,9 +50,10 @@ public class FullGenomeOEWithinClusters {
     public static int numAttemptsForKMeans = 3;
     private final File outputDirectory;
     private final ChromosomeHandler chromosomeHandler;
-    private final SliceMatrix sliceMatrix;
+    private final CompositeGenomeWideMatrix sliceMatrix;
     private final int maxIters = 200;
     private final Random generator = new Random(2352);
+    private final UmapProjection projection;
 
     public FullGenomeOEWithinClusters(List<Dataset> datasets, ChromosomeHandler chromosomeHandler, int resolution,
                                       List<NormalizationType[]> normalizationTypes,
@@ -76,6 +78,13 @@ public class FullGenomeOEWithinClusters {
         }
 
         sliceMatrix.cleanUpMatricesBySparsity();
+
+        if (Slice.USE_INTER_CORR_CLUSTERING || Slice.PROJECT_TO_UMAP) {
+            projection = new UmapProjection(sliceMatrix, true);
+            projection.runUmapAndColorByChromosome(outputDirectory);
+        } else {
+            projection = null;
+        }
     }
 
     public void extractFinalGWSubcompartments(String prefix) {
@@ -129,7 +138,9 @@ public class FullGenomeOEWithinClusters {
         SliceUtils.collapseGWList(gwList);
         File outBedFile = new File(outputDirectory, prefix + "_" + k + "_" + kstem + "_clusters.bed");
         gwList.simpleExport(outBedFile);
-        sliceMatrix.plotUmapProjection(outputDirectory, kmeansIndicesMap.get(z), prefix + "_" + k + "_" + kstem + "_clusters");
+        if (projection != null) {
+            projection.plotProjection(outputDirectory, kmeansIndicesMap.get(z), prefix + "_" + k + "_" + kstem + "_clusters");
+        }
     }
 
     public void runRepeatedKMeansClusteringLoop(int attemptsForKMeans, GenomeWideKmeansRunner kmeansRunner,
