@@ -31,8 +31,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="6acb92ea-ffe9-4dfd-8d8d-f8ce0f27bdf3" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/src/mixer/algos/Magic.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/mixer/clt/CLTFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/clt/CLTFactory.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/mixer/utils/bed/BedFileMappings.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/mixer/utils/bed/SubcompartmentBedFile.java" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -286,27 +286,6 @@
       <workItem from="1664865439276" duration="841000" />
       <workItem from="1664951292715" duration="1391000" />
       <workItem from="1665031208723" duration="2230000" />
-    </task>
-    <task id="LOCAL-00172" summary="upgrade straw jar">
-      <created>1637531135937</created>
-      <option name="number" value="00172" />
-      <option name="presentableId" value="LOCAL-00172" />
-      <option name="project" value="LOCAL" />
-      <updated>1637531135937</updated>
-    </task>
-    <task id="LOCAL-00173" summary="random silhouette, encode option">
-      <created>1637533333592</created>
-      <option name="number" value="00173" />
-      <option name="presentableId" value="LOCAL-00173" />
-      <option name="project" value="LOCAL" />
-      <updated>1637533333593</updated>
-    </task>
-    <task id="LOCAL-00174" summary="random silhouette, encode option">
-      <created>1637608886416</created>
-      <option name="number" value="00174" />
-      <option name="presentableId" value="LOCAL-00174" />
-      <option name="project" value="LOCAL" />
-      <updated>1637608886416</updated>
     </task>
     <task id="LOCAL-00175" summary="bug fixes">
       <created>1637613478338</created>
@@ -630,7 +609,28 @@
       <option name="project" value="LOCAL" />
       <updated>1665033819571</updated>
     </task>
-    <option name="localTasksCounter" value="221" />
+    <task id="LOCAL-00221" summary="update handling of indices">
+      <created>1666737369326</created>
+      <option name="number" value="00221" />
+      <option name="presentableId" value="LOCAL-00221" />
+      <option name="project" value="LOCAL" />
+      <updated>1666737369327</updated>
+    </task>
+    <task id="LOCAL-00222" summary="cleanup">
+      <created>1666737494352</created>
+      <option name="number" value="00222" />
+      <option name="presentableId" value="LOCAL-00222" />
+      <option name="project" value="LOCAL" />
+      <updated>1666737494353</updated>
+    </task>
+    <task id="LOCAL-00223" summary="cleanup">
+      <created>1666737551923</created>
+      <option name="number" value="00223" />
+      <option name="presentableId" value="LOCAL-00223" />
+      <option name="project" value="LOCAL" />
+      <updated>1666737551923</updated>
+    </task>
+    <option name="localTasksCounter" value="224" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -654,7 +654,6 @@
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <option name="CHECK_CODE_CLEANUP_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="fix random seed issue" />
     <MESSAGE value="fix random seed issues" />
     <MESSAGE value="update shuffle calculation" />
     <MESSAGE value="clone list of indices" />
@@ -679,7 +678,8 @@
     <MESSAGE value="symm test" />
     <MESSAGE value="update straw" />
     <MESSAGE value="update handling of indices" />
-    <option name="LAST_COMMIT_MESSAGE" value="update handling of indices" />
+    <MESSAGE value="cleanup" />
+    <option name="LAST_COMMIT_MESSAGE" value="cleanup" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />
