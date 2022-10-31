@@ -49,32 +49,34 @@ public class ShuffleAction {
     private final int compressionFactor;
     private final int resolution;
     private final int numRounds = 50;
-    private final InterOnlyMatrix.InterMapType[] mapTypes = {InterOnlyMatrix.InterMapType.ODDS_VS_EVENS,
-            InterOnlyMatrix.InterMapType.SKIP_BY_TWOS, InterOnlyMatrix.InterMapType.FIRST_HALF_VS_SECOND_HALF};
+    private final Partition.Type[] mapTypes;
     private final SimilarityMetric metric;
-    private ScoreContainer scoreContainer = new ScoreContainer(mapTypes.length, NUM_SCORES);
+    private ScoreContainer scoreContainer;
     private Chromosome[] chromosomes;
     private HiCMatrix.INTRA_TYPE intraType = HiCMatrix.INTRA_TYPE.DEFAULT;
     private boolean isIntra = false;
     private final boolean useSymmetry;
 
     public ShuffleAction(Dataset ds, NormalizationType norm, int resolution, int compressionFactor,
-                         SimilarityMetric metric, boolean useSymmetry) {
+                         SimilarityMetric metric, boolean useSymmetry, Partition.Type[] maptypes) {
         this.resolution = resolution;
         this.compressionFactor = compressionFactor;
         this.ds = ds;
         this.norm = norm;
         this.metric = metric;
         this.useSymmetry = useSymmetry;
+        this.mapTypes = maptypes;
+        this.scoreContainer = new ScoreContainer(mapTypes.length, NUM_SCORES);
     }
 
     public ShuffleAction(Dataset ds, NormalizationType norm, int resolution, int compressionFactor,
-                         SimilarityMetric metric, InterOnlyMatrix.INTRA_TYPE intraType, boolean useSymmetry) {
-        this(ds, norm, resolution, compressionFactor, metric, useSymmetry);
+                         SimilarityMetric metric, InterOnlyMatrix.INTRA_TYPE intraType, boolean useSymmetry,
+                         Partition.Type[] maptypes) {
+        this(ds, norm, resolution, compressionFactor, metric, useSymmetry, maptypes);
         isIntra = true;
         this.intraType = intraType;
         chromosomes = ds.getChromosomeHandler().getAutosomalChromosomesArray();
-        scoreContainer = new ScoreContainer(chromosomes.length, 2);
+        scoreContainer = new ScoreContainer(chromosomes.length, NUM_SCORES);
     }
 
     public void runGWStats(GenomeWide1DList<SubcompartmentInterval> subcompartments, File outfolder) {

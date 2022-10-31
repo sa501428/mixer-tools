@@ -34,6 +34,7 @@ import javastraw.tools.UNIXTools;
 import mixer.clt.CommandLineParserForMixer;
 import mixer.clt.MixerCLT;
 import mixer.utils.matrix.InterOnlyMatrix;
+import mixer.utils.shuffle.Partition;
 import mixer.utils.shuffle.ShuffleAction;
 import mixer.utils.similaritymeasures.SimilarityMetric;
 import mixer.utils.slice.structures.SliceUtils;
@@ -62,7 +63,7 @@ public class ShuffleAndUMAP extends MixerCLT {
     private final boolean useIntraMap, useGWMap;
     private InterOnlyMatrix.INTRA_TYPE intraType;
     private SimilarityMetric metric = null;
-    private final boolean doUMAP, doShuffle, useSymmetry;
+    private final boolean doUMAP, doShuffle, useSymmetry, useOriginal;
 
     // subcompartment lanscape identification via clustering enrichment
     public ShuffleAndUMAP(String name) {
@@ -71,6 +72,7 @@ public class ShuffleAndUMAP extends MixerCLT {
         useGWMap = name.contains("gw");
         useIntraMap = name.contains("intra");
         doShuffle = name.contains("shuffle");
+        useOriginal = name.contains("original");
         doUMAP = name.contains("umap");
         useSymmetry = name.contains("symm");
     }
@@ -117,6 +119,13 @@ public class ShuffleAndUMAP extends MixerCLT {
 
         UNIXTools.makeDir(outputDirectory);
 
+        Partition.Type[] mapTypes = {Partition.Type.ODDS_VS_EVENS,
+                Partition.Type.SKIP_BY_TWOS, Partition.Type.FIRST_HALF_VS_SECOND_HALF};
+        if (useOriginal) {
+            mapTypes = new Partition.Type[]{Partition.Type.ODDS_VS_EVENS,
+                    Partition.Type.SKIP_BY_TWOS, Partition.Type.FIRST_HALF_VS_SECOND_HALF};
+        }
+
         if (doShuffle) {
             for (int i = 0; i < referenceBedFiles.length; i++) {
                 GenomeWide1DList<SubcompartmentInterval> subcompartments =
@@ -128,10 +137,10 @@ public class ShuffleAndUMAP extends MixerCLT {
                 ShuffleAction matrix;
                 if (useIntraMap) {
                     matrix = new ShuffleAction(ds, norm, resolution, compressionFactor,
-                            metric, intraType, useSymmetry);
+                            metric, intraType, useSymmetry, mapTypes);
                     matrix.runIntraAnalysis(subcompartments, newFolder, generator);
                 } else {
-                    matrix = new ShuffleAction(ds, norm, resolution, compressionFactor, metric, useSymmetry);
+                    matrix = new ShuffleAction(ds, norm, resolution, compressionFactor, metric, useSymmetry, mapTypes);
                     matrix.runInterAnalysis(subcompartments, newFolder, generator);
                 }
                 matrix.savePlotsAndResults(newFolder, prefix[i]);
@@ -142,9 +151,9 @@ public class ShuffleAndUMAP extends MixerCLT {
         if (doUMAP) {
             UMAPAction umap;
             if (useIntraMap) {
-                umap = new UMAPAction(ds, norm, resolution, compressionFactor, metric, intraType);
+                umap = new UMAPAction(ds, norm, resolution, compressionFactor, metric, intraType, mapTypes);
             } else {
-                umap = new UMAPAction(ds, norm, resolution, compressionFactor, metric, useGWMap);
+                umap = new UMAPAction(ds, norm, resolution, compressionFactor, metric, useGWMap, mapTypes);
             }
             umap.runAnalysis(referenceBedFiles, outputDirectory, chromosomeHandler);
         }

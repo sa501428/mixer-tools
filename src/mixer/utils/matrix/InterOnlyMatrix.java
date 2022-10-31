@@ -31,6 +31,7 @@ import javastraw.reader.mzd.MatrixZoomData;
 import javastraw.reader.type.NormalizationType;
 import javastraw.tools.HiCFileTools;
 import mixer.utils.common.FloatMatrixTools;
+import mixer.utils.shuffle.Partition;
 import mixer.utils.similaritymeasures.SimilarityMetric;
 
 public class InterOnlyMatrix extends HiCMatrix {
@@ -42,7 +43,7 @@ public class InterOnlyMatrix extends HiCMatrix {
                 false, INTRA_TYPE.DEFAULT, true, 0);
     }
 
-    public static InterOnlyMatrix getMatrix(Dataset ds, NormalizationType norm, int resolution, InterMapType mapType,
+    public static InterOnlyMatrix getMatrix(Dataset ds, NormalizationType norm, int resolution, Partition.Type mapType,
                                             SimilarityMetric metric) {
         ChromosomeHandler chromosomeHandler = ds.getChromosomeHandler();
         Chromosome[] rowsChromosomes, colsChromosomes;
@@ -91,7 +92,4 @@ public class InterOnlyMatrix extends HiCMatrix {
                     matrix[offsetIndex1 + i], offsetIndex2, allDataForRegion[i].length);
         }
     }
-
-
-    public enum InterMapType {ODDS_VS_EVENS, FIRST_HALF_VS_SECOND_HALF, SKIP_BY_TWOS}
 }

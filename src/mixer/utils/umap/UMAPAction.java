@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2011-2021 Rice University, Baylor College of Medicine, Aiden Lab
+ * Copyright (c) 2011-2022 Rice University, Baylor College of Medicine, Aiden Lab
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,6 +36,7 @@ import mixer.utils.matrix.GWInterOnlyMatrix;
 import mixer.utils.matrix.HiCMatrix;
 import mixer.utils.matrix.InterOnlyMatrix;
 import mixer.utils.matrix.IntraOnlyMatrix;
+import mixer.utils.shuffle.Partition;
 import mixer.utils.similaritymeasures.SimilarityMetric;
 import mixer.utils.slice.cleaning.IntraMatrixCleaner;
 import mixer.utils.slice.structures.SliceUtils;
@@ -58,24 +59,24 @@ public class UMAPAction {
     private final int resolution;
     private final SimilarityMetric metric;
     private final boolean useGWMap;
-    private final InterOnlyMatrix.InterMapType[] mapTypes = {InterOnlyMatrix.InterMapType.ODDS_VS_EVENS,
-            InterOnlyMatrix.InterMapType.SKIP_BY_TWOS, InterOnlyMatrix.InterMapType.FIRST_HALF_VS_SECOND_HALF};
+    private final Partition.Type[] mapTypes;
     private HiCMatrix.INTRA_TYPE intraType = null;
     private boolean isIntra = false;
 
     public UMAPAction(Dataset ds, NormalizationType norm, int resolution, int compressionFactor,
-                      SimilarityMetric metric, boolean useGWMap) {
+                      SimilarityMetric metric, boolean useGWMap, Partition.Type[] mapTypes) {
         this.resolution = resolution;
         this.compressionFactor = compressionFactor;
         this.ds = ds;
         this.norm = norm;
         this.metric = metric;
         this.useGWMap = useGWMap;
+        this.mapTypes = mapTypes;
     }
 
     public UMAPAction(Dataset ds, NormalizationType norm, int resolution, int compressionFactor,
-                      SimilarityMetric metric, HiCMatrix.INTRA_TYPE intraType) {
-        this(ds, norm, resolution, compressionFactor, metric, false);
+                      SimilarityMetric metric, HiCMatrix.INTRA_TYPE intraType, Partition.Type[] mapTypes) {
+        this(ds, norm, resolution, compressionFactor, metric, false, mapTypes);
         this.intraType = intraType;
         isIntra = true;
     }
