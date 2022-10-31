@@ -119,8 +119,8 @@ public class ShuffleAndUMAP extends MixerCLT {
 
         UNIXTools.makeDir(outputDirectory);
 
-        Partition.Type[] mapTypes = {Partition.Type.ODDS_VS_EVENS,
-                Partition.Type.SKIP_BY_TWOS, Partition.Type.FIRST_HALF_VS_SECOND_HALF};
+        Partition.Type[] mapTypes = {Partition.Type.SPLIT1, Partition.Type.SPLIT2,
+                Partition.Type.SPLIT3, Partition.Type.SPLIT4, Partition.Type.SPLIT5};
         if (useOriginal) {
             mapTypes = new Partition.Type[]{Partition.Type.ODDS_VS_EVENS,
                     Partition.Type.SKIP_BY_TWOS, Partition.Type.FIRST_HALF_VS_SECOND_HALF};

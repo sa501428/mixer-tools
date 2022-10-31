@@ -30,8 +30,8 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6acb92ea-ffe9-4dfd-8d8d-f8ce0f27bdf3" name="Default Changelist" comment="reorganize partitions">
-      <change beforePath="$PROJECT_DIR$/src/mixer/utils/matrix/InterOnlyMatrix.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/utils/matrix/InterOnlyMatrix.java" afterDir="false" />
+    <list default="true" id="6acb92ea-ffe9-4dfd-8d8d-f8ce0f27bdf3" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/mixer/utils/shuffle/Partition.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/mixer/utils/shuffle/Partition.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -287,14 +287,7 @@
       <workItem from="1664951292715" duration="1391000" />
       <workItem from="1665031208723" duration="2230000" />
       <workItem from="1667069182880" duration="2270000" />
-      <workItem from="1667221817080" duration="1710000" />
-    </task>
-    <task id="LOCAL-00176" summary="update bed printing">
-      <created>1637613820384</created>
-      <option name="number" value="00176" />
-      <option name="presentableId" value="LOCAL-00176" />
-      <option name="project" value="LOCAL" />
-      <updated>1637613820384</updated>
+      <workItem from="1667221817080" duration="2879000" />
     </task>
     <task id="LOCAL-00177" summary="rename class">
       <created>1637616868367</created>
@@ -632,7 +625,14 @@
       <option name="project" value="LOCAL" />
       <updated>1667223267887</updated>
     </task>
-    <option name="localTasksCounter" value="225" />
+    <task id="LOCAL-00225" summary="reorganize partitions">
+      <created>1667223535282</created>
+      <option name="number" value="00225" />
+      <option name="presentableId" value="LOCAL-00225" />
+      <option name="project" value="LOCAL" />
+      <updated>1667223535282</updated>
+    </task>
+    <option name="localTasksCounter" value="226" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -656,7 +656,6 @@
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <option name="CHECK_CODE_CLEANUP_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="update shuffle calculation" />
     <MESSAGE value="clone list of indices" />
     <MESSAGE value="remove floating point errors to ensure accurate md5sum reproducibility of chic score" />
     <MESSAGE value="switch double array to float array" />
@@ -681,7 +680,8 @@
     <MESSAGE value="update handling of indices" />
     <MESSAGE value="cleanup" />
     <MESSAGE value="change implementation of inter partitions" />
-    <option name="LAST_COMMIT_MESSAGE" value="change implementation of inter partitions" />
+    <MESSAGE value="reorganize partitions" />
+    <option name="LAST_COMMIT_MESSAGE" value="reorganize partitions" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />
