@@ -26,6 +26,7 @@ package mixer.utils.matrix;
 
 import javastraw.reader.Dataset;
 import javastraw.reader.basics.Chromosome;
+import javastraw.reader.basics.ChromosomeArrayPair;
 import javastraw.reader.basics.ChromosomeHandler;
 import javastraw.reader.mzd.MatrixZoomData;
 import javastraw.reader.type.NormalizationType;
@@ -46,24 +47,8 @@ public class InterOnlyMatrix extends HiCMatrix {
     public static InterOnlyMatrix getMatrix(Dataset ds, NormalizationType norm, int resolution, Partition.Type mapType,
                                             SimilarityMetric metric) {
         ChromosomeHandler chromosomeHandler = ds.getChromosomeHandler();
-        Chromosome[] rowsChromosomes, colsChromosomes;
-        switch (mapType) {
-            case SKIP_BY_TWOS: // but start with CHR 1 separate
-                rowsChromosomes = chromosomeHandler.splitAutosomesAndSkipByTwos().a;
-                colsChromosomes = chromosomeHandler.splitAutosomesAndSkipByTwos().b;
-                break;
-            case FIRST_HALF_VS_SECOND_HALF:
-                rowsChromosomes = chromosomeHandler.splitAutosomesIntoHalves().a;
-                colsChromosomes = chromosomeHandler.splitAutosomesIntoHalves().b;
-                break;
-            case ODDS_VS_EVENS:
-            default:
-                rowsChromosomes = chromosomeHandler.extractOddOrEvenAutosomes(true);
-                colsChromosomes = chromosomeHandler.extractOddOrEvenAutosomes(false);
-                break;
-        }
-
-        return new InterOnlyMatrix(ds, norm, resolution, rowsChromosomes, colsChromosomes, metric);
+        ChromosomeArrayPair cPairs = Partition.getChromosomePartition(chromosomeHandler, mapType);
+        return new InterOnlyMatrix(ds, norm, resolution, cPairs.a, cPairs.b, metric);
     }
 
     protected void fillInChromosomeRegion(Dataset ds, float[][] matrix, MatrixZoomData zd, Chromosome chr1, int offsetIndex1,

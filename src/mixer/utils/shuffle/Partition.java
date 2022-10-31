@@ -24,6 +24,21 @@
 
 package mixer.utils.shuffle;
 
+import javastraw.reader.basics.ChromosomeArrayPair;
+import javastraw.reader.basics.ChromosomeHandler;
+
 public class Partition {
+    public static ChromosomeArrayPair getChromosomePartition(ChromosomeHandler chromosomeHandler, Type mapType) {
+        if (mapType == Type.SKIP_BY_TWOS) {
+            return chromosomeHandler.splitAutosomesAndSkipByTwos();
+        } else if (mapType == Type.FIRST_HALF_VS_SECOND_HALF) {
+            return chromosomeHandler.splitAutosomesIntoHalves();
+        } else if (mapType == Type.ODDS_VS_EVENS) {
+            return new ChromosomeArrayPair(chromosomeHandler.extractOddOrEvenAutosomes(true),
+                    chromosomeHandler.extractOddOrEvenAutosomes(false));
+        }
+        return null;
+    }
+
     public enum Type {ODDS_VS_EVENS, FIRST_HALF_VS_SECOND_HALF, SKIP_BY_TWOS}
 }
