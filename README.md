@@ -295,3 +295,11 @@ For issues, questions, or contributions, please open an issue on the GitHub repo
 ---
 
 **Note:** This toolkit is designed for research use. Ensure you have appropriate computational resources for large Hi-C datasets, as processing can be memory and CPU intensive.
+
+## Native C++ SLICe
+
+A native C++17 port of the active Java SLICe pipeline is in [CPP](CPP/README.md).
+It includes independently compressed multi-input features, the default
+k-medians path, optional k-means, ENCODE export, native diagnostic projection,
+and an opt-in translocation mask. See [the porting audit](CPP/PORTING.md) for
+source mappings, defaults, Java differential tests, and compatibility details.
