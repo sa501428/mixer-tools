@@ -1,3 +1,8 @@
+> Compatibility note (2026-10-18): the Java correspondence below describes
+> `--java-compatible`. Native defaults now use raw compressed trans balancing,
+> explicit eligible exposure and zero-preserving cleaning. `--legacy-scale`
+> retains the all-stage cis SCALE option. See README.md for current controls.
+
 # Java reference and compatibility audit
 
 Reference: Mixer Tools commit `863f1f42738c52f25a167eefc6cd31b1321abdc4`.

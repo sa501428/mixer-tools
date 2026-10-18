@@ -27,6 +27,13 @@ void usage() {
       "      --no-umap            Disable diagnostic projection\n"
       "      --has-translocation  Detect and mask suspected translocations\n"
       "  -k, --normalization NAME Override stage defaults (Java slice ignores -k)\n"
+      "      --cis-normalization NAME Cis/coverage norm (SCALE, fallback KR)\n"
+      "      --trans-normalization NAME NONE (computed balance), AUTO, or stored norm\n"
+      "      --legacy-scale       Preserve cis SCALE throughout and legacy cleaning\n"
+      "      --java-compatible    Stored stage norms and original Java cleaning\n"
+      "      --row-standardization none|weighted-zscore (none)\n"
+      "      --min-exposure-fraction F Minimum eligible target fraction (0.2)\n"
+      "      --max-memory-gb F    Matrix workspace budget (4 GiB)\n"
       "      --max-retries N      Bound Java's unbounded collapsed-cluster retries\n";
 }
 std::vector<std::string> split(const std::string& value) {
@@ -66,6 +73,8 @@ int main(int argc, char** argv) {
             if (!endOptions && (arg == "-h" || arg == "--help")) { usage(); return 0; }
             if (!endOptions && (arg == "-V" || arg == "--version")) { std::cout << "Mixer Tools SLICe C++ 1.0\n"; return 0; }
             if (!endOptions && (arg == "-v" || arg == "--verbose")) { options.verbose = true; continue; }
+            if (!endOptions && arg == "--legacy-scale") { options.normalization="SCALE"; options.transNormalization="SCALE"; options.balanceTrans=false; options.legacyCleaning=true; continue; }
+            if (!endOptions && arg == "--java-compatible") { options.javaCompatible=true; options.balanceTrans=false; options.legacyCleaning=true; continue; }
             if (!endOptions && arg == "--encode-mode") { options.encode = true; continue; }
             if (!endOptions && arg == "--kmeans") { options.means = true; options.medians = false; continue; }
             if (!endOptions && arg == "--both") { options.means = options.medians = true; continue; }
@@ -74,12 +83,16 @@ int main(int argc, char** argv) {
             if (!endOptions && arg == "--has-translocation") { options.detectTranslocations = true; continue; }
             if (!endOptions && arg.rfind('-', 0) == 0) {
                 std::string name = arg.substr(0, arg.find('=')), value;
-                const std::vector<std::string> known = {"-r", "--resolutions", "--resolution", "-c", "--chromosomes", "-z", "--threads", "--random-seeds", "--subsample", "-k", "--normalization", "--max-retries", "-m", "--matrix-window-width", "-w", "--window", "--seed", "--compare", "--type", "--corr"};
+                const std::vector<std::string> known = {"-r", "--resolutions", "--resolution", "-c", "--chromosomes", "-z", "--threads", "--random-seeds", "--subsample", "-k", "--normalization", "--max-retries", "--cis-normalization", "--trans-normalization", "--row-standardization", "--max-memory-gb", "--min-exposure-fraction", "-m", "--matrix-window-width", "-w", "--window", "--seed", "--compare", "--type", "--corr"};
                 if (std::find(known.begin(), known.end(), name) == known.end()) throw std::invalid_argument("Unknown option: " + name);
                 if (arg.find('=') != std::string::npos) value = arg.substr(arg.find('=') + 1);
                 else if (++i < argc) value = argv[i];
                 else throw std::invalid_argument("Missing value for " + name);
-                if (name == "--max-retries") options.maxRetries = positive(value);
+                if(name=="--row-standardization") {if(value!="none"&&value!="weighted-zscore")throw std::invalid_argument("Row standardization must be none or weighted-zscore");options.rowStandardization=value!="none";}
+                else if(name=="--max-memory-gb"||name=="--min-exposure-fraction") {size_t used=0;double v=std::stod(value,&used);if(used!=value.size()||!std::isfinite(v)||v<=0||(name=="--min-exposure-fraction"&&v>1))throw std::invalid_argument("Invalid exposure or memory limit");if(name=="--max-memory-gb")options.memoryGB=v;else options.minExposureFraction=v;}
+                else if(name=="--trans-normalization") {options.transNormalization=value;options.balanceTrans=value=="NONE"||value=="AUTO";options.legacyCleaning=false;}
+                else if(name=="--cis-normalization") options.normalization=value;
+                else if (name == "--max-retries") options.maxRetries = positive(value);
                 else if (name == "-r" || name == "--resolutions" || name == "--resolution") {
                     auto values = split(value); options.resolution = positive(values[0]);
                     if (values.size() > 1) std::cerr << "Only one resolution can be specified; using " << options.resolution << '\n';
@@ -87,7 +100,7 @@ int main(int argc, char** argv) {
                 else if (name == "-z" || name == "--threads") { auto n = integer(value); if (n > std::numeric_limits<int>::max()) throw std::invalid_argument("Thread count too large"); options.threads = n < 0 ? std::max(1U, std::thread::hardware_concurrency()) : std::max(1U, static_cast<unsigned>(n)); }
                 else if (name == "-k" || name == "--normalization") {
                     if (value.empty()) throw std::invalid_argument("Normalization must not be empty");
-                    options.normalization = value;
+                    options.normalization = value; options.transNormalization=value; options.balanceTrans=false; options.legacyCleaning=true;
                 }
                 else if (name == "--random-seeds") for (const auto& seed : split(value)) options.seed = static_cast<uint64_t>(integer(seed));
                 else if (name == "--subsample") { auto n = integer(value); if (n > std::numeric_limits<int>::max() || n < std::numeric_limits<int>::min()) throw std::invalid_argument("Subsample out of 32-bit range"); if (n > 0) options.subsample = static_cast<int>(n); }
@@ -104,6 +117,7 @@ int main(int argc, char** argv) {
         if (options.endK <= options.firstK) throw std::invalid_argument("KF must be greater than K0 (exclusive upper bound)");
         options.output = positional[2]; options.prefix = positional[3];
         if (options.prefix.find('/') != std::string::npos || options.prefix.find('\\') != std::string::npos) throw std::invalid_argument("Prefix must be a filename prefix");
+        if(options.javaCompatible&&(options.rowStandardization||options.balanceTrans))throw std::invalid_argument("Row standardization is incompatible with --java-compatible");
         slice::run(options);
         return 0;
     } catch (const std::exception& e) { std::cerr << "slice: " << e.what() << '\n'; return 1; }

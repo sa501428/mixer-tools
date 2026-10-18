@@ -27,7 +27,11 @@ struct Options {
     bool verbose = false;
     std::filesystem::path output;
     std::string prefix;
+    double memoryGB=4, minExposureFraction=.2;
+    bool rowStandardization=false, legacyCleaning=false;
     std::string normalization; // Empty selects the original per-stage defaults.
+    std::string transNormalization="NONE";
+    bool balanceTrans=true, javaCompatible=false;
     bool encode = false, means = false, medians = true;
     bool filterOutliers = true, project = true, detectTranslocations = false;
     int subsample = 100, maxRetries = 100;
@@ -43,6 +47,8 @@ struct Cluster {
 };
 struct CleanMatrix {
     Matrix values;
+    Matrix exposure; // Eligible target mass, additive across source members.
+    std::vector<double> rowMass, sourceSize;
     std::vector<int> weights;
     std::vector<Interval> intervals;
 };

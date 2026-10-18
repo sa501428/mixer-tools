@@ -79,7 +79,7 @@ def main():
             jout, cout = root/(name+'_java'), root/(name+'_cpp')
             args = ['--random-seeds', '17,42', '-z', '2', files, cluster_range]
             execute(java+args+[jout, 'test'])
-            run(binary, '--no-umap', *args, cout, 'test')
+            run(binary, '--java-compatible', '--no-umap', *args, cout, 'test')
             for file in ('slice_matrix.npy', 'genome_indices.npy', 'kmedians_cluster_post_stats.npy'):
                 compare_array(jout/file, cout/file)
             for k in (2, 3):
@@ -93,7 +93,7 @@ def main():
         jout, cout = root/'both_java', root/'both_cpp'
         args = ['--random-seeds', '42', '--encode-mode', str(hic), '2,6,2']
         execute(java_both+args+[jout, 'test'])
-        run(binary, '--both', '--no-umap', *args, cout, 'test')
+        run(binary, '--java-compatible', '--both', '--no-umap', *args, cout, 'test')
         for method in ('kmeans', 'kmedians'):
             compare_array(jout/f'{method}_cluster_post_stats.npy', cout/f'{method}_cluster_post_stats.npy')
             for k in range(2, 6):
@@ -108,7 +108,7 @@ def main():
         jout, cout = root/'projection_java', root/'projection_cpp'
         args = ['--random-seeds', '42', str(hic), '2,3,1']
         execute(java_projection+args+[jout, 'test'])
-        run(binary, *args, cout, 'test')
+        run(binary, '--java-compatible', *args, cout, 'test')
         compare_array(jout/'corr_slice_matrix.npy', cout/'corr_slice_matrix.npy')
     print('Java differential parity passed: compression, cleaned matrix, coordinates, multi-input, both clustering methods, WCSS/AIC/BIC/correlation, ENCODE')
 

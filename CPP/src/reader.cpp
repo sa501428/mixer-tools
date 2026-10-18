@@ -1,5 +1,6 @@
 // Native SLICE pipeline; all .hic access goes through straw C++.
 #include "slice/slice.hpp"
+#include "slice/trans_preprocess.hpp"
 #include "slice/parallel.hpp"
 #include "pipeline_internal.hpp"
 #include <algorithm>
@@ -49,15 +50,14 @@ std::string chooseNormLabel(const Input& input, const std::vector<std::string>& 
     throw std::runtime_error(input.file + ": no " + names + " normalization in dataset");
 }
 std::string chooseNorm(const Input& input, int resolution, const std::vector<std::string>& candidates) {
-    // NormalizationPicker chooses the first advertised label, not the first
-    // label with usable vectors at this resolution. Missing vectors are errors.
-    auto norm=chooseNormLabel(input,candidates);
-    for (const auto& chr : input.chromosomes) {
-        std::vector<double> vector;
-        if (!normalizationVector(input,chr,resolution,norm,vector) || vector.empty())
-            throw std::runtime_error(input.file+": missing "+norm+" normalization vector for "+chr.name+" at "+std::to_string(resolution));
+    for(const auto& norm:candidates){
+        if(norm=="NONE")return norm;
+        if(std::find(input.info.normalizations.begin(),input.info.normalizations.end(),norm)==input.info.normalizations.end())continue;
+        bool available=true;
+        for(const auto& chr:input.chromosomes){std::vector<double> vector;if(!normalizationVector(input,chr,resolution,norm,vector)||vector.empty()){available=false;break;}}
+        if(available)return norm;
     }
-    return norm;
+    throw std::runtime_error(input.file+": no requested normalization vectors for all selected chromosomes at "+std::to_string(resolution));
 }
 // Prepared queries validate the matrix and normalization and return normalized
 // counts in base-pair coordinates. Convert them once at the reader boundary.
@@ -148,6 +148,7 @@ Order orderChromosome(const Input& input, size_t a, const std::vector<bool>& bad
                       const Options& options, Random& random) {
     int lowres = std::max(options.resolution, 100000), factor = lowres / options.resolution;
     size_t n = bins(input.chromosomes[a], lowres);
+    hic_trans::memoryGuard(n,n,options.memoryGB);
     Matrix oe(n, Row(n, 0));
     std::vector<double> expected;
     if (!getExpectedVectorForFile(input.file, input.chromosomes[a].name, lowres, input.intra, expected) || expected.empty())
@@ -316,8 +317,8 @@ std::vector<Input> loadInputs(const Options& options) {
         requireResolution(in, lowres);
         in.intra = chooseNorm(in, options.resolution, options.normalization.empty()
             ? std::vector<std::string>{"SCALE", "KR"} : std::vector<std::string>{options.normalization});
-        in.gw = chooseNormLabel(in, options.normalization.empty()
-            ? std::vector<std::string>{"GW_SCALE", "GW_KR"} : std::vector<std::string>{options.normalization});
+        in.gw = options.detectTranslocations ? chooseNormLabel(in, options.normalization.empty()
+            ? (options.javaCompatible?std::vector<std::string>{"GW_SCALE", "GW_KR"}:std::vector<std::string>{"GW_SCALE", "GW_KR", "NONE"}) : std::vector<std::string>{options.normalization}) : "NONE";
         in.coverage = in.intra;
         {
             // The same intra normalization must work for both coverage and O/E.
@@ -326,15 +327,15 @@ std::vector<Input> loadInputs(const Options& options) {
                 if (!normalizationVector(in, chr, lowres, in.intra, vec) || vec.empty())
                     throw std::runtime_error("Missing " + in.intra + " normalization at compression resolution " + std::to_string(lowres));
             }
-            in.inter = chooseNorm(in, options.resolution, options.normalization.empty()
-                ? std::vector<std::string>{"INTER_SCALE", "INTER_KR"} : std::vector<std::string>{options.normalization});
+            in.inter = options.javaCompatible ? chooseNorm(in, options.resolution, {"INTER_SCALE","INTER_KR"}) :
+                options.transNormalization=="AUTO" ? chooseNorm(in,options.resolution,{"INTER_SCALE","INTER_KR","INTER_VC","NONE"}) : chooseNorm(in,options.resolution,{options.transNormalization});
         }
         if (options.verbose) std::cout << file << ": intra=" << in.intra << " inter=" << in.inter << " gw=" << in.gw << '\n';
         inputs.push_back(std::move(in));
     }
     return inputs;
 }
-CleanMatrix compressedTrans(const Input& input, const Mask& bad, const std::vector<Order>& orders, int resolution) {
+CleanMatrix compressedTrans(const Input& input, const Mask& bad, const std::vector<Order>& orders, int resolution, double minExposureFraction, double memoryGB, bool legacy) {
     CleanMatrix data;
     std::vector<std::vector<int64_t>> rows;
     std::vector<size_t> offsets;
@@ -350,6 +351,7 @@ CleanMatrix compressedTrans(const Input& input, const Mask& bad, const std::vect
     }
     if (!columns || data.intervals.empty()) throw std::runtime_error("No matrix created; map is too sparse");
     data.weights.assign(columns, 0);
+    hic_trans::memoryGuard(data.intervals.size(),columns,memoryGB);
     data.values.assign(data.intervals.size(), Row(columns, 0));
     for (size_t a = 0; a < orders.size(); ++a) {
         for (size_t x = 0; x < bad[a].size(); ++x) if (!bad[a][x] && orders[a].assignments[x] >= 0)
@@ -357,6 +359,8 @@ CleanMatrix compressedTrans(const Input& input, const Mask& bad, const std::vect
         for (auto row : rows[a]) if (row >= 0)
             std::fill(data.values[row].begin() + offsets[a], data.values[row].begin() + offsets[a] + orders[a].count, nan);
     }
+    data.exposure.assign(data.values.size(),Row(columns,0));
+    for(size_t i=0;i<data.values.size();++i)for(size_t j=0;j<columns;++j)if(std::isfinite(data.values[i][j]))data.exposure[i][j]=data.weights[j];
     for (size_t a = 0; a < orders.size(); ++a) for (size_t b = a + 1; b < orders.size(); ++b)
         records(input, a, b, resolution, input.inter, [&](size_t x, size_t y, float v) {
             if (!std::isfinite(v)) return;
@@ -389,7 +393,9 @@ CleanMatrix compressedTrans(const Input& input, const Mask& bad, const std::vect
                 for (size_t g = 0; g < removed.size(); ++g) if (removed[g]) {
                     size_t j = offsets[b] + g; int eligible = data.weights[j] - removed[g];
                     auto& value = data.values[rows[a][row.first]][j];
-                    value = eligible > 0 ? static_cast<float>(double(value) * data.weights[j] / eligible) : nan;
+                    data.exposure[rows[a][row.first]][j]=eligible;
+                    if(legacy)value = eligible > 0 ? static_cast<float>(double(value) * data.weights[j] / eligible) : nan;
+                    else if(eligible<minExposureFraction*data.weights[j]){value=nan;data.exposure[rows[a][row.first]][j]=0;}
                 }
             }
         }

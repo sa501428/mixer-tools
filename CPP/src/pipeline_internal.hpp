@@ -28,9 +28,9 @@ Mask badBins(const std::vector<Input>& inputs, int resolution, const Mask& exclu
 Order orderChromosome(const Input& input, size_t a, const std::vector<bool>& bad,
                       const Options& options, Random& random);
 CleanMatrix compressedTrans(const Input& input, const Mask& bad,
-                            const std::vector<Order>& orders, int resolution);
+                            const std::vector<Order>& orders, int resolution, double minExposureFraction=.2, double memoryGB=4, bool legacy=false);
 std::vector<Translocation> findTranslocations(const Input& input, const Mask& bad, int resolution,
-    int& detectionResolution, const std::filesystem::path& output);
+    int& detectionResolution, const std::filesystem::path& output, double memoryGB=4);
 void saveBed(const std::filesystem::path&, const Input&, const CleanMatrix&, const std::vector<Cluster>&);
 void saveNpy(const std::filesystem::path&, const std::vector<std::vector<double>>&);
 void saveNpy(const std::filesystem::path&, const Matrix&);

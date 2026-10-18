@@ -8,7 +8,7 @@ Java and Python are not runtime dependencies. It does not call the neighboring
 The source baseline is Mixer Tools commit
 `863f1f42738c52f25a167eefc6cd31b1321abdc4`. See [PORTING.md](PORTING.md)
 for the Java-to-C++ map, exact defaults, validation, and compatibility differences.
-The numerical calling pipeline is tested against the actual Java code, including
+The explicit `--java-compatible` pipeline is tested against the actual Java code, including
 multiple inputs, k-means, k-medians and ENCODE export. Diagnostic UMAP coordinates
 use a native implementation and are **not numerically identical to tagbio UMAP**.
 
@@ -47,7 +47,7 @@ cmake --install build --prefix /your/install/prefix
 ## Run
 
 ```sh
-# Java-compatible calling defaults: 100 kb, k-medians, automatic stage norms.
+# Default: 100 kb, k-medians, cis SCALE/KR, raw compressed trans balancing.
 ./build/slice sample.hic 2,10,3 output sample
 
 # The optional slice subcommand is also accepted.
@@ -72,7 +72,40 @@ cmake --install build --prefix /your/install/prefix
 per K. For example `2,10,3` runs K=2 through K=9, three attempts each, choosing
 the lowest Java WCSS score for each K. It does not select a single final K.
 
-## Pipeline
+## Normalization and preprocessing defaults
+
+Trans now defaults to `NONE` → compression → exposure-aware matrix balancing.
+Cis normalization remains SCALE, falling back to KR at the requested resolution.
+No INTER or GW vector is needed for the default run. Matrix workspace is guarded
+by `--max-memory-gb` (4 GiB); this is a conservative array estimate, not an OS RSS limit.
+
+```sh
+# Select cis normalization without overriding the raw-trans default.
+./build/slice --cis-normalization SCALE sample.hic 2,10,3 output sample
+# Explicitly preserve the old cis-SCALE-throughout behavior and cleaning.
+./build/slice --legacy-scale sample.hic 2,10,3 legacy sample
+# Reproduce the original Java stages, numerical cleaning and calling.
+./build/slice --java-compatible sample.hic 2,10,3 java sample
+# Optional stored trans norm, or AUTO: INTER_SCALE/INTER_KR/INTER_VC/NONE.
+./build/slice --trans-normalization AUTO sample.hic 2,10,3 auto sample
+```
+
+`-k SCALE` remains an alias for the legacy all-stage override. Use
+`--cis-normalization SCALE` for the new default. Explicit `--trans-normalization`
+selects the new cleaner. Balancing is computed only for raw NONE input.
+`analysis_parameters.tsv` records each stage's source normalization and balancing
+residual; `trans_row_factors_N.tsv` and `trans_column_factors_N.tsv` save factors.
+
+New cleaning uses log1p per eligible target mass, preserves observed zeros, and
+clips only extreme upper values at the larger of the column's 99th percentile
+and median + log(100), protecting rare nonzero states. It then column-z-scores,
+optionally row-z-scores (`--row-standardization weighted-zscore`, default none),
+and applies feature weights. Row z-scoring requires three variable coordinates
+and SD > 1e-6. Partial translocation masks carry actual eligible exposure;
+`--min-exposure-fraction` (0.2) rejects poorly observed groups without extrapolation.
+Original cleaning and Java parity are preserved by the two compatibility modes.
+
+## Original Java-compatible pipeline (`--java-compatible`)
 
 1. Select autosomes and build a shared bad-bin mask across all inputs. Using
    cis `SCALE` (fallback `KR`) normalization on trans contacts, compute average
@@ -134,7 +167,7 @@ the lowest Java WCSS score for each K. It does not select a single final K.
 | `--no-filter-outliers` | C++ extension exposing `FILTER_OUTLIERS=false`. |
 | `--no-umap` | C++ extension; skips cosine projection and UMAP, leaving calls unchanged. Useful for small maps or large runs. |
 | `--has-translocation` | C++ extension connecting the otherwise dormant Java helpers; see below. |
-| `-k`, `--normalization NAME` | C++ extension overriding stage normalizations. Java's active `Slice.java` ignores this global parser option. Omit for faithful stage defaults. |
+| `-k`, `--normalization NAME` | Legacy all-stage override with original cleaning; `--legacy-scale` selects SCALE. Use `--cis-normalization` for cis-only selection. |
 | `--max-retries N` | C++ safety extension; default 100 retries per successful attempt instead of Java's unbounded retry loop. |
 
 The global Mixer parser also accepts `-m/--matrix-window-width`, `-w/--window`,

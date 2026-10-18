@@ -1,12 +1,13 @@
 // Port of the dormant SimpleTranslocationFinder / Connected2DComponent helpers.
 #include "pipeline_internal.hpp"
+#include "slice/trans_preprocess.hpp"
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
 
 namespace slice::detail {
 std::vector<Translocation> findTranslocations(const Input& input, const Mask& bad, int resolution,
-    int& detectionResolution, const std::filesystem::path& output) {
+    int& detectionResolution, const std::filesystem::path& output, double memoryGB) {
     detectionResolution=*std::max_element(input.info.bpResolutions.begin(),input.info.bpResolutions.end());
     const int coarse=detectionResolution;
     const auto& norm=input.gw;
@@ -46,6 +47,7 @@ std::vector<Translocation> findTranslocations(const Input& input, const Mask& ba
         });
         if (points.empty()) continue;
         if (rows>100000000/cols) throw std::runtime_error("Translocation bitmap exceeds 100 million cells; use a coarser map");
+        hic_trans::memoryGuard(rows,cols,memoryGB,1);
         Mask bitmap(rows,std::vector<bool>(cols,false));
         for (auto p:points) for (size_t x=p.x?p.x-1:0;x<std::min(rows,p.x+2);++x)
             for (size_t y=p.y?p.y-1:0;y<std::min(cols,p.y+2);++y) bitmap[x][y]=true;

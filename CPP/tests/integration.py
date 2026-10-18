@@ -80,8 +80,22 @@ def main():
         calls(root/'exact/e_2_kmedians_clusters.bed')
         scale = root/'scale.hic'
         fixture(scale, norms=('SCALE',))
-        run(binary, '--no-umap', scale, '2,3,1', root/'missingnorm', 's', ok=False)
+        run(binary, '--no-umap', scale, '2,3,1', root/'missingnorm', 's')
+        params=dict(line.split('\t') for line in (root/'missingnorm/analysis_parameters.tsv').read_text().splitlines()[1:])
+        assert params['trans_source_normalization_0']=='NONE' and float(params['balance_error_0'])<=1e-4
+        run(binary, '--java-compatible', '--no-umap', scale, '2,3,1', root/'missingnorm-java', 's', ok=False)
+        run(binary, '--legacy-scale', '--no-umap', scale, '2,3,1', root/'legacy-scale', 's')
+        run(binary, '--cis-normalization', 'SCALE', '--row-standardization', 'weighted-zscore', '--no-umap', scale, '2,3,1', root/'rowz', 's')
+        run(binary, '--max-memory-gb', '.000001', '--no-umap', hic, '2,3,1', root/'memory', 's', ok=False)
         run(binary, '--no-umap', '-k', 'SCALE', scale, '2,3,1', root/'override', 's')
+        assert (root/'legacy-scale/slice_matrix.npy').read_bytes()==(root/'override/slice_matrix.npy').read_bytes()
+        vc=root/'inter-vc.hic';fixture(vc,norms=('SCALE','INTER_VC'))
+        run(binary,'--no-umap','--trans-normalization','AUTO',vc,'2,3,1',root/'vc','s')
+        params=dict(line.split('\t') for line in (root/'vc/analysis_parameters.tsv').read_text().splitlines()[1:])
+        assert params['trans_source_normalization_0']=='INTER_VC'
+        run(binary,'--no-umap','--trans-normalization','AUTO',scale,'2,3,1',root/'auto-raw','s')
+        params=dict(line.split('\t') for line in (root/'auto-raw/analysis_parameters.tsv').read_text().splitlines()[1:])
+        assert params['trans_source_normalization_0']=='NONE' and 'balance_error_0' in params
         rearranged = root/'rearranged.hic'
         fixture(rearranged, trans_value=lambda a,b,x,y: 1e25 if a==1 and b==2 and 5<=x<15 and 5<=y<15 else 10+(x+y)%8)
         run(binary, '--no-umap', '--has-translocation', rearranged, '2,3,1', root/'translocations', 't')

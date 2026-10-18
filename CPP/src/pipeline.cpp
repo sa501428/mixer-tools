@@ -1,4 +1,5 @@
 #include "slice/slice.hpp"
+#include "slice/trans_preprocess.hpp"
 #include "pipeline_internal.hpp"
 #include <algorithm>
 #include <cmath>
@@ -6,6 +7,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <sstream>
+#include <numeric>
 
 namespace slice {
 namespace {
@@ -68,11 +70,13 @@ void encode(const Options& o, const detail::Input& input, const CleanMatrix& dat
 void run(const Options& options) {
     auto inputs=detail::loadInputs(options);
     std::filesystem::create_directories(options.output);
+    auto parameters=detail::outputFile(options.output/"analysis_parameters.tsv");
+    parameters<<"parameter\tvalue\ntrans_mode\t"<<(options.balanceTrans?"computed_if_raw":"stored")<<"\nrow_standardization\t"<<(options.rowStandardization?"weighted-zscore":"none")<<"\ncleaning\t"<<(options.legacyCleaning?"legacy":"zero_preserving_log1p_clip")<<"\nmax_memory_gb\t"<<options.memoryGB<<'\n';
     auto bad=detail::badBins(inputs,options.resolution);
     if (options.detectTranslocations) {
         for (auto& input:inputs) {
             int detection=0;
-            input.translocations=detail::findTranslocations(input,bad,options.resolution,detection,options.output);
+            input.translocations=detail::findTranslocations(input,bad,options.resolution,detection,options.output,options.memoryGB);
         }
     }
     Random command(options.seed), genome(command.nextLong());
@@ -92,15 +96,23 @@ void run(const Options& options) {
                 detail::bedLine(id<0?problems:init,inputs[d].chromosomes[a],int64_t(x)*options.resolution,int64_t(x+1)*options.resolution,id);
             }
         }
-        auto block=detail::compressedTrans(inputs[d],bad,orders,options.resolution);
+        auto block=detail::compressedTrans(inputs[d],bad,orders,options.resolution,options.minExposureFraction,options.memoryGB,options.legacyCleaning);
+        parameters<<"cis_normalization_"<<d<<'\t'<<inputs[d].intra<<"\ntrans_source_normalization_"<<d<<'\t'<<inputs[d].inter<<'\n';
+        if(options.balanceTrans&&inputs[d].inter=="NONE"){
+            auto report=hic_trans::balance(block);
+            parameters<<"balance_iterations_"<<d<<'\t'<<report.iterations<<"\nbalance_error_"<<d<<'\t'<<report.relativeError<<"\nbalance_mean_contact_"<<d<<'\t'<<report.meanContact<<'\n';
+            auto rf=detail::outputFile(options.output/("trans_row_factors_"+std::to_string(d)+".tsv"));rf<<"row\tchromosome\tstart\tend\tmultiplier\tavailable_target_mass\n";for(size_t i=0;i<report.rowFactors.size();++i){const auto& x=block.intervals[i];rf<<i<<'\t'<<inputs[d].chromosomes[x.chromosome].name<<'\t'<<x.start<<'\t'<<x.end<<'\t'<<report.rowFactors[i]<<'\t'<<std::accumulate(block.exposure[i].begin(),block.exposure[i].end(),0.)<<'\n';}
+            auto cf=detail::outputFile(options.output/("trans_column_factors_"+std::to_string(d)+".tsv"));cf<<"column\tmultiplier\n";for(size_t j=0;j<report.columnFactors.size();++j)cf<<j<<'\t'<<report.columnFactors[j]<<'\n';
+        }
         if (!d) { data=std::move(block); composite.nextLong(); firstMatrixState=composite.nextLong(); }
         else {
             if (block.intervals.size()!=data.intervals.size()) throw std::runtime_error("Input row alignment mismatch");
-            for (size_t i=0;i<data.values.size();++i) data.values[i].insert(data.values[i].end(),block.values[i].begin(),block.values[i].end());
+            hic_trans::memoryGuard(data.values.size(),data.weights.size()+block.weights.size(),options.memoryGB);
+            for (size_t i=0;i<data.values.size();++i){ data.values[i].insert(data.values[i].end(),block.values[i].begin(),block.values[i].end());data.exposure[i].insert(data.exposure[i].end(),block.exposure[i].begin(),block.exposure[i].end());}
             data.weights.insert(data.weights.end(),block.weights.begin(),block.weights.end());
         }
     }
-    clean(data,options.filterOutliers);
+    if(options.legacyCleaning)clean(data,options.filterOutliers);else hic_trans::clean(data,options.rowStandardization,options.filterOutliers);
     std::vector<std::vector<int32_t>> indices;
     for (const auto& interval:data.intervals) {
         if (interval.end>std::numeric_limits<int32_t>::max()) throw std::runtime_error("Java-compatible genome_indices.npy requires 32-bit coordinates");
