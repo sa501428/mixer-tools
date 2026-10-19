@@ -17,7 +17,7 @@ def string(value):
     return value.encode() + b'\0'
 
 
-def fixture(path, norms=('SCALE', 'INTER_SCALE', 'GW_SCALE'), resolution=100000, missing_pair=False, shift=0, exact_length=False, chromosome_count=3, trans_value=None):
+def fixture(path, norms=('SCALE', 'INTER_SCALE', 'GW_SCALE'), resolution=100000, missing_pair=False, shift=0, exact_length=False, chromosome_count=3, trans_value=None, cis_sparse=False):
     # Non-integral chromosome lengths exercise the historical floor(length/r)+1
     # bin convention without relying on an external writer or downloaded data.
     n = 120
@@ -45,6 +45,9 @@ def fixture(path, norms=('SCALE', 'INTER_SCALE', 'GW_SCALE'), resolution=100000,
                     # Six contiguous cis domains; inter contacts follow two
                     # broader states with variation within each state.
                     if a == b:
+                        if cis_sparse and x != y:
+                            if 66 in (x,y) or (55 in (x,y) and {x,y} != {55,95}):
+                                continue
                         value = 70 if x // 20 == y // 20 else 3
                         value += (x * 7 + y * 3 + a + shift) % 9
                     else:
@@ -52,6 +55,8 @@ def fixture(path, norms=('SCALE', 'INTER_SCALE', 'GW_SCALE'), resolution=100000,
                         value += (x * 3 + y * 5 + a + b + shift) % 13
                         if trans_value is not None:
                             value = trans_value(a, b, x, y)
+                    if cis_sparse and a == b and x == y and x in (55,66):
+                        value = 1_000_000  # Self counts must never rescue cis coverage.
                     points.append(pack('hf', x, value))
                     total += value
                     count += 1

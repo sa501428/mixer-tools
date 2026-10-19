@@ -268,8 +268,8 @@ public class IndexOrderer {
 
         int x1 = hires * pos;
         int x2 = x1 + hires;
-        String bedLine = "chr" + chrom.getName() + "\t" + x1 + "\t" + x2 + "\t" + val + "\t" + val
-                + "\t.\t" + x1 + "\t" + x2 + "\t" + SubcompartmentColors.getColorString(Math.abs(val));
+        String bedLine = (chrom.getName().startsWith("chr") ? chrom.getName() : "chr" + chrom.getName()) + "\t" + x1 + "\t" + x2 + "\t" + val + "\t0"
+                + "\t.\t" + x1 + "\t" + x2 + "\t" + SubcompartmentColors.getColorString(val);
         fw.write(bedLine + "\n");
     }
 }

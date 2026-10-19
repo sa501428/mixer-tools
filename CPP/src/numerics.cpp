@@ -75,35 +75,69 @@ static void assign(const Matrix& data, const std::vector<Cluster>& clusters,
         assignments[i] = chosen;
     });
 }
-std::vector<Cluster> kmeans(const Matrix& data, int k, int iterations, uint64_t seed, unsigned threads, bool medians) {
+// Exact L1 lower bounds on each row's observed coordinates. If a centroid's
+// support changes, its bounds are invalidated and the full distance is evaluated.
+static void assignMedians(const Matrix& data,const std::vector<Cluster>& clusters,
+                          std::vector<int>& assignments,unsigned threads,
+                          std::vector<double>& lower,const std::vector<double>& movement,
+                          const std::vector<size_t>& finite){
+    size_t k=clusters.size();bool initial=lower.empty();if(initial)lower.assign(data.size()*k,0);
+    detail::parallelFor(data.size(),threads,[&](size_t i){
+        double factor=finite[i]?double(data[i].size())/finite[i]:1;
+        if(!initial)for(size_t c=0;c<k;++c){double& bound=lower[i*k+c];
+            bound=std::isfinite(bound)&&std::isfinite(movement[c])?std::max(0.,bound-movement[c]*factor-32*std::numeric_limits<float>::epsilon()*(1+bound)):0;}
+        int chosen=assignments[i];double best=std::numeric_limits<double>::infinity();
+        if(chosen>=0&&!clusters[size_t(chosen)].members.empty()){
+            best=static_cast<float>(absoluteDistance(data[i],clusters[size_t(chosen)].center));lower[i*k+size_t(chosen)]=best;if(!std::isfinite(best))chosen=-1;}
+        for(size_t c=0;c<k;++c)if(!clusters[c].members.empty()){
+            if(!initial&&int(c)==chosen)continue;
+            if(!initial&&lower[i*k+c]>best)continue;
+            double distance=static_cast<float>(absoluteDistance(data[i],clusters[c].center));lower[i*k+c]=distance;
+            if(distance<best||(std::isfinite(distance)&&distance==best&&(chosen<0||int(c)<chosen))){best=distance;chosen=int(c);}}
+        assignments[i]=chosen;
+    });
+}
+std::vector<Cluster> kmeans(const Matrix& data, int k, int iterations, uint64_t seed, unsigned threads, bool medians, bool bounded) {
     if (data.empty() || data[0].empty() || k < 1 || static_cast<size_t>(k) > data.size())
         throw std::invalid_argument("Not enough usable rows for requested cluster count");
     Random random(seed);
     std::vector<Cluster> clusters;
     Row closest(data.size(), std::numeric_limits<float>::max());
     size_t index = static_cast<size_t>(random.nextInt(static_cast<int>(data.size())));
+    // K-medians repeatedly visits one coordinate across many members. A single
+    // blocked transpose makes those scans contiguous and is shared by all centers.
+    Matrix columns;
+    if(medians){columns.assign(data[0].size(),Row(data.size()));
+        for(size_t ib=0;ib<data.size();ib+=64)for(size_t jb=0;jb<data[0].size();jb+=64)
+            for(size_t i=ib;i<std::min(data.size(),ib+64);++i)for(size_t j=jb;j<std::min(data[0].size(),jb+64);++j)columns[j][i]=data[i][j];}
     std::vector<int> assignments(data.size(), -1);
     for (int c = 0; c < k; ++c) {
         clusters.push_back({data[index], {index}});
         assignments[index] = c;
-        for (size_t i = 0; i < data.size(); ++i)
-            closest[i] = std::min(closest[i], static_cast<float>(medians ? absoluteDistance(data[i], data[index]) : std::sqrt(squaredDistance(data[i], data[index]))));
+        detail::parallelFor(data.size(),threads,[&](size_t i){
+            closest[i] = std::min(closest[i], static_cast<float>(medians ? absoluteDistance(data[i], data[index]) : std::sqrt(squaredDistance(data[i], data[index]))));});
         index = static_cast<size_t>(std::max_element(closest.begin(), closest.end()) - closest.begin());
     }
-    assign(data, clusters, assignments, threads, medians);
+    std::vector<double> lower;std::vector<size_t> finite(data.size());
+    if(medians&&bounded){for(size_t i=0;i<data.size();++i)for(float v:data[i])finite[i]+=std::isfinite(v);assignMedians(data,clusters,assignments,threads,lower,{},finite);}
+    else assign(data, clusters, assignments, threads, medians);
     for (int iteration = 0; iteration < iterations; ++iteration) {
         for (auto& c : clusters) c.members.clear();
         for (size_t i = 0; i < data.size(); ++i) if (assignments[i] >= 0) clusters[assignments[i]].members.push_back(i);
-        for (auto& c : clusters) if (!c.members.empty()) {
+        Matrix previousCenters;if(medians&&bounded)for(const auto& c:clusters)previousCenters.push_back(c.center);
+        detail::parallelFor(clusters.size(),threads,[&](size_t ci){ auto& c=clusters[ci]; if (!c.members.empty()) {
             c.center.assign(data[0].size(), 0);
+            if(!medians){
             std::vector<size_t> counts(c.center.size(), 0);
             for (auto i : c.members) for (size_t j = 0; j < c.center.size(); ++j) if (std::isfinite(data[i][j])) {
                 c.center[j] += data[i][j]; ++counts[j];
             }
             for (size_t j = 0; j < c.center.size(); ++j) c.center[j] = counts[j] ? c.center[j] / counts[j] : nan;
+            }
+            Row values;if(medians)values.reserve(c.members.size());
             if (medians) for (size_t j = 0; j < c.center.size(); ++j) {
-                Row values;
-                for (auto i : c.members) if (std::isfinite(data[i][j])) values.push_back(data[i][j]);
+                values.clear();
+                for (auto i : c.members) if (std::isfinite(columns[j][i])) values.push_back(columns[j][i]);
                 if (values.empty()) { c.center[j] = nan; continue; }
                 size_t mid = values.size() / 2;
                 std::nth_element(values.begin(), values.begin()+mid, values.end());
@@ -111,9 +145,14 @@ std::vector<Cluster> kmeans(const Matrix& data, int k, int iterations, uint64_t 
                 if (!(values.size() % 2)) value = (value + *std::max_element(values.begin(), values.begin()+mid)) / 2.f;
                 c.center[j] = value;
             }
-        }
+        }});
         auto before = assignments;
-        assign(data, clusters, assignments, threads, medians);
+        if(medians&&bounded){std::vector<double> movement(clusters.size());
+            for(size_t c=0;c<clusters.size();++c)for(size_t j=0;j<clusters[c].center.size();++j){double old=previousCenters[c][j],now=clusters[c].center[j];
+                if(!std::isfinite(old)||!std::isfinite(now)){movement[c]=INFINITY;break;}
+                movement[c]+=std::abs(old-now)+32*std::numeric_limits<float>::epsilon()*(std::abs(old)+std::abs(now)+1);}
+            assignMedians(data,clusters,assignments,threads,lower,movement,finite);
+        }else assign(data,clusters,assignments,threads,medians);
         if (before == assignments) break;
     }
     for (auto& c : clusters) c.members.clear();

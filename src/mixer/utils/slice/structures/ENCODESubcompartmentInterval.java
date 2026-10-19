@@ -73,7 +73,7 @@ public class ENCODESubcompartmentInterval extends SubcompartmentInterval {
     @Override
     public String toString() {
         return "chr" + clean(getChrName()) + "\t" + getX1() + "\t" + getX2() + "\t" + (getClusterID() + 1) +
-                "\t" + (getClusterID() + 1) + "\t.\t" + getX1() + "\t" + getX2() +
+                "\t0\t.\t" + getX1() + "\t" + getX2() +
                 "\t" + SubcompartmentColors.getColorString((getClusterID() + 1)) + listOutAllIDs();
     }
 

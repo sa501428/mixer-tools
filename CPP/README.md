@@ -1,5 +1,9 @@
 # SLICe in C++
 
+Current adaptive/dual normalization controls and legacy invocations: [workspace usage](../../ADAPTIVE_USAGE.md). SLIDE/SLIDE_R2 are deprecated for future development and default comparisons.
+
+Adaptive analysis is explicit: `--cluster-policy adaptive --normalization-views dual`. The raw/count and cis-normalized views are fitted separately; provisional states and actual cluster counts are reported.
+
 Native C++17 implementation of the active Mixer Tools Java `slice` pipeline,
 located alongside its Java reference. It reads `.hic` files through straw C++;
 Java and Python are not runtime dependencies. It does not call the neighboring
@@ -222,3 +226,50 @@ with the largest cis matrix and the genome-wide compressed matrix. Native UMAP
 uses exact neighbors and can be expensive for large genomes. Use `--no-umap`
 when only calls are required. Degenerate/sparse inputs fail with an explanation;
 a failed run may leave useful intermediate outputs.
+
+Performance: `-z N` parallelizes compression, pair aggregation, independent starts and centers. Exact diagnostic UMAP is opt-in via `--umap` in normal runs. Java-compatible mode keeps its original projection default; use `--no-umap` for large maps.
+
+## Browser-ready subcompartment tracks
+
+Call tracks use BED9: chromosome, zero-based start, exclusive end, cluster name,
+score `0`, strand `.`, thick start/end equal to the interval, and `itemRgb`.
+Touching intervals on the same chromosome with the same final label are merged;
+gaps, different labels, and chromosome boundaries remain separate. Per-bin
+analytical tables keep their original granularity. The first 20 states use a
+fixed high-contrast categorical palette, with additional colors beyond 20 rather
+than repeating the palette. Explicit unassigned state `0` is neutral gray.
+Numeric state IDs have the same colors across the tools; this does not imply
+that independently fitted states are biologically equivalent. String state
+names receive distinct colors in sorted name order within each track.
+For UCSC custom tracks, enable `itemRgb="On"` in the track configuration.
+Existing result directories are not migrated; these changes apply to new runs.
+
+In ENCODE mode, `slice_subcompartment_clusters.bed` is the merged BED9 track
+for the selected clustering. Alternate-clustering metadata is retained in
+`slice_subcompartment_clusterings.tsv`, whose first nine columns describe the
+interval and whose final three columns retain the existing ENCODE metadata.
+Those custom columns are not standard BED12 block fields.
+
+## Cis coverage exclusion
+
+Every calling run applies an independent cis coverage mask before clustering or
+row pooling. At the analysis resolution, read raw (`NONE`) cis contacts and count
+positive off-diagonal pixels incident on each row; the self-diagonal is excluded.
+For multiple inputs, sum each input's nonzero observations per row. Compute the
+mean and population standard deviation separately for each chromosome, using
+nonempty rows. Always exclude empty rows, and exclude nonempty rows with
+`z = (row_nonzeros - mean) / sd < -2.5`. With zero variance, retain the nonempty
+rows and still exclude empty rows. The cutoff is enabled by default, independently
+of normalization-vector validity and the existing trans coverage filters.
+
+Excluded bins cannot enter a row pool or acquire a positive final call through
+pool expansion or smoothing. BED files that include an explicit unassigned state
+may retain these intervals as label `0`. Missing required cis matrices cause the
+run to fail rather than silently accepting the rows.
+
+The per-bin `cis_coverage.tsv` report records `cis_nonzero`, `zscore`, the
+chromosome's `mean_nonzero` and `sd_nonzero`, and `retained` (1 or 0). SLICE writes
+`cis_coverage_RESOLUTIONbp.tsv` for each evaluated grid instead; its final call
+mask is also enforced at the output resolution. These reports describe the cis
+mask alone; trans coverage, normalization and model-support checks can exclude
+additional bins.

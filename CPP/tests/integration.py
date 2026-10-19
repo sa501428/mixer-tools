@@ -6,6 +6,7 @@ from pathlib import Path
 import struct
 import subprocess
 import sys
+from bed_contract import validate_bed
 import tempfile
 from hic_fixture import fixture
 
@@ -45,7 +46,7 @@ def main():
                 '-z', threads, hic, '2,6,2', out, 'test')
             for method in ('kmeans', 'kmedians'):
                 for k in range(2, 6):
-                    rows = calls(out/f'test_{k}_{method}_clusters.bed')
+                    rows = validate_bed(out/f'test_{k}_{method}_clusters.bed')
                     assert {row[0] for row in rows} == {'chr1', 'chr2', 'chr3'}
                     assert {int(row[3]) for row in rows} == set(range(1, k+1))
                     assert all(int(rows[i][1]) >= int(rows[i-1][2]) for i in range(1, len(rows)) if rows[i][0] == rows[i-1][0])
@@ -56,16 +57,46 @@ def main():
             assert header['descr'] == '<f4' and header['shape'][0] == 360
             assert any(math.isnan(v) for v in values) and any(math.isfinite(v) for v in values)
             assert npy(out/'genome_indices.npy')[0]['descr'] == '<i4'
-            assert all(len(row) == 12 for row in calls(out/'slice_subcompartment_clusters.bed'))
+            validate_bed(out/'slice_subcompartment_clusters.bed')
+            assert all(len(row) == 12 for row in calls(out/'slice_subcompartment_clusterings.tsv'))
         for path in (root/'1').iterdir():
+            if path.name=='analysis_parameters.tsv':
+                left=[r for r in path.read_text().splitlines() if not r.startswith('threads\t')]
+                right=[r for r in (root/'3'/path.name).read_text().splitlines() if not r.startswith('threads\t')]
+                assert left==right
+                continue
             assert path.read_bytes() == (root/'3'/path.name).read_bytes(), path.name
         # Projection is diagnostic: calls and saved matrix must be unchanged.
-        run(binary, '--random-seeds', 42, hic, '2,3,2', root/'projection', 'p')
+        run(binary, '--umap', '--random-seeds', 42, hic, '2,3,2', root/'projection', 'p')
         run(binary, '--no-umap', '--random-seeds', 42, hic, '2,3,2', root/'plain', 'p')
         for name in ('slice_matrix.npy', 'p_2_kmedians_clusters.bed', 'kmedians_cluster_post_stats.npy'):
             assert (root/'projection'/name).read_bytes() == (root/'plain'/name).read_bytes()
         assert npy(root/'projection/umap_projection.npy')[0]['shape'] == (360, 2)
         assert '<svg' in (root/'projection/umap_chrom.svg').read_text()
+        # Adaptive paired fits use one compression, preserve both outputs and are deterministic.
+        for threads in (1, 3):
+            out=root/f'dual-{threads}'
+            run(binary,'--cluster-policy','adaptive','--normalization-views','dual',
+                '--model','gmm','--k-range','2,3','-z',threads,'--random-seeds',42,
+                hic,'2,3,2',out,'dual')
+            for name in ('inter.bed','cis.bed','combined.bed','state_lineage.tsv','view_footprint.tsv'):
+                assert (out/name).stat().st_size>0,name
+        for name in ('inter.bed','cis.bed','combined.bed','adaptive_summary.tsv','state_lineage.tsv'):
+            assert (root/'dual-1'/name).read_bytes()==(root/'dual-3'/name).read_bytes(),name
+        assert not (root/'dual-1/umap_projection.npy').exists()
+        for name in ('inter.bed','cis.bed','combined.bed'):
+            validate_bed(root/'dual-1'/name)
+        def footprint(path):
+            return {(r[0],x) for r in calls(path) for x in range(int(r[1]),int(r[2]),100000)}
+        assert footprint(root/'dual-1/combined.bed') == footprint(root/'dual-1/inter.bed') | footprint(root/'dual-1/cis.bed')
+
+        # A missing companion normalization preserves the inter result.
+        run(binary,'--cis-normalization','MISSING','--cluster-policy','adaptive',
+            '--normalization-views','dual','--k-range','2,3',hic,'2,3,1',root/'missing-cis','m')
+        assert (root/'missing-cis/combined.bed').stat().st_size>0
+        run(binary,'--cis-normalization','SCALE','--trans-normalization','SCALE','--post-balance',
+            '--cluster-policy','adaptive','--k-range','2,3',hic,'2,3,1',root/'post-balanced','p')
+        assert (root/'post-balanced/combined.bed').stat().st_size>0
         kr = root/'kr.hic'
         fixture(kr, norms=('KR', 'INTER_KR', 'GW_KR'), shift=3)
         run(binary, '--no-umap', f'{hic},{kr}', '2,3,1', root/'multi', 'm')

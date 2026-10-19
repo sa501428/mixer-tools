@@ -27,13 +27,17 @@ struct Options {
     bool verbose = false;
     std::filesystem::path output;
     std::string prefix;
+    double cisViewWeight=1,matchOverlap=.8;
     double memoryGB=4, minExposureFraction=.2;
-    bool rowStandardization=false, legacyCleaning=false;
+    bool rowStandardization=false, legacyCleaning=false, dual=false, adaptive=false;
+    int targetK=0, minK=0, maxK=0, maxIterations=200;
+    std::string model="kmeans";
     std::string normalization; // Empty selects the original per-stage defaults.
     std::string transNormalization="NONE";
-    bool balanceTrans=true, javaCompatible=false;
+    bool distanceBounds=true, parallelAttempts=true;
+    bool balanceTrans=true, javaCompatible=false, forceBalance=false;
     bool encode = false, means = false, medians = true;
-    bool filterOutliers = true, project = true, detectTranslocations = false;
+    bool filterOutliers = true, project = false, detectTranslocations = false;
     int subsample = 100, maxRetries = 100;
 
 };
@@ -54,7 +58,7 @@ struct CleanMatrix {
 };
 float correlation(const Row& x, const Row& y, bool arc = false);
 double squaredDistance(const Row& x, const Row& y);
-std::vector<Cluster> kmeans(const Matrix& data, int k, int iterations, uint64_t seed, unsigned threads, bool medians = false);
+std::vector<Cluster> kmeans(const Matrix& data, int k, int iterations, uint64_t seed, unsigned threads, bool medians = false, bool bounded = true);
 // SliceMatrixCleaner: global cleanup, sparse-row removal, z-score and weights.
 void clean(CleanMatrix& data, bool filterOutliers = true);
 void run(const Options& options);

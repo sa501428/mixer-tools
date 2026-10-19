@@ -14,6 +14,8 @@ import sys
 import tempfile
 from hic_fixture import fixture
 from integration import npy, run
+from bed_contract import validate_bed
+from cis_coverage_integration import check as check_cis
 
 
 def execute(args):
@@ -62,6 +64,9 @@ def compile_reference(reference, work, both=False, project=False):
     classes = work/'classes'
     classpath = os.pathsep.join(str(reference/'lib'/part/'*') for part in ('general', 'umap'))
     execute(['javac', '-proc:none', '-cp', classpath, '-sourcepath', source, '-d', classes, source/'mixer/MixerTools.java'])
+    execute(['javac', '-cp', str(classes)+os.pathsep+classpath, '-d', classes,
+             reference/'CPP/tests/BedOutputTest.java'])
+    execute(['java', '-cp', str(classes)+os.pathsep+classpath, 'BedOutputTest'])
     return ['java', '-XX:ActiveProcessorCount=2', '-Djava.awt.headless=true', '-cp', str(classes)+os.pathsep+classpath, 'mixer.MixerTools', 'slice']
 
 
@@ -89,6 +94,13 @@ def main():
             # the native port preserves each input's diagnostics separately.
             cpp_split = 'initial_split_1.bed' if name == 'multiple' else 'initial_split.bed'
             assert assignments(jout/'initial_split.bed') == assignments(cout/cpp_split)
+        sparse=root/'cis_sparse.hic';fixture(sparse,cis_sparse=True)
+        jout,cout=root/'sparse_java',root/'sparse_cpp'
+        args=['--random-seeds','42','-z','2',str(sparse),'2,3,1']
+        execute(java+args+[jout,'test'])
+        run(binary,'--java-compatible','--no-umap',*args,cout,'test')
+        for out in (jout,cout):check_cis(out,['test_2_kmedians_clusters.bed'])
+        assert assignments(jout/'test_2_kmedians_clusters.bed')==assignments(cout/'test_2_kmedians_clusters.bed')
         java_both = compile_reference(reference, root/'both', both=True)
         jout, cout = root/'both_java', root/'both_cpp'
         args = ['--random-seeds', '42', '--encode-mode', str(hic), '2,6,2']
@@ -103,6 +115,9 @@ def main():
         # ENCODE's alternative-clustering fields include interval widths, so
         # compare complete row sets after removing Java's duplicate first row.
         rows = lambda path: {tuple(line.split('\t')) for line in path.read_text().splitlines() if not line.startswith('#')}
+        validate_bed(jout/file); validate_bed(cout/file)
+        assert rows(jout/file) == rows(cout/file)
+        file = 'slice_subcompartment_clusterings.tsv'
         assert rows(jout/file) == rows(cout/file)
         java_projection = compile_reference(reference, root/'projection_reference', project=True)
         jout, cout = root/'projection_java', root/'projection_cpp'

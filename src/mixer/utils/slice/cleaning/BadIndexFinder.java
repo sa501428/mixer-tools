@@ -27,6 +27,9 @@ package mixer.utils.slice.cleaning;
 import javastraw.reader.Dataset;
 import javastraw.reader.basics.Chromosome;
 import javastraw.reader.block.Block;
+import javastraw.reader.block.ContactRecord;
+import java.io.File;
+import java.io.FileWriter;
 import javastraw.reader.mzd.MatrixZoomData;
 import javastraw.reader.type.NormalizationType;
 import javastraw.tools.HiCFileTools;
@@ -43,6 +46,8 @@ public class BadIndexFinder {
     protected final Map<Integer, Set<Integer>> badIndices = new HashMap<>();
     protected final Map<Integer, Set<Integer>> emptyIndices = new HashMap<>();
     protected final List<NormalizationType[]> norms;
+    private final Map<Integer,CisCoverage> cisCoverage = new HashMap<>();
+    private Chromosome[] coverageChromosomes;
     private final GWRegionStatistics gwStats = new GWRegionStatistics();
 
     public BadIndexFinder(Chromosome[] chromosomes, int resolution, List<NormalizationType[]> norms) {
@@ -80,6 +85,39 @@ public class BadIndexFinder {
             }
         }
         determineBadIndicesFromGenomewideStats(chromosomes);
+        coverageChromosomes=chromosomes;
+        for(Chromosome chrom:chromosomes){
+            int n=(int)((chrom.getLength()+resolution-1)/resolution);
+            double[] nonzero=new double[n];
+            for(Dataset dataset:datasets){
+                MatrixZoomData zd=HiCFileTools.getMatrixZoomData(dataset,chrom,chrom,resolution);
+                if(zd==null)throw new IllegalStateException("Missing cis matrix for coverage filter: "+chrom.getName());
+                // Iterate raw blocks lazily; high-resolution cis maps can be much
+                // larger than the row statistics retained by this filter.
+                Iterator<ContactRecord> records=zd.getDirectIterator();
+                while(records.hasNext()){
+                    ContactRecord record=records.next();
+                    int x=record.getBinX(),y=record.getBinY();
+                    if(x!=y&&x>=0&&y>=0&&x<n&&y<n&&Float.isFinite(record.getCounts())&&record.getCounts()>0){
+                        nonzero[x]++;nonzero[y]++;
+                    }
+                }
+            }
+            CisCoverage profile=new CisCoverage(nonzero);cisCoverage.put(chrom.getIndex(),profile);
+            for(int x=0;x<n;x++)if(profile.bad[x])badIndices.get(chrom.getIndex()).add(x);
+        }
+    }
+
+    public void writeCisCoverage(File directory) {
+        try(FileWriter out=new FileWriter(new File(directory,"cis_coverage.tsv"))){
+            out.write("chromosome\tstart\tend\tcis_nonzero\tzscore\tmean_nonzero\tsd_nonzero\tretained\n");
+            for(Chromosome chrom:coverageChromosomes){
+                CisCoverage p=cisCoverage.get(chrom.getIndex());
+                for(int x=0;x<p.nonzero.length;x++)out.write(chrom.getName()+"\t"+((long)x*resolution)+"\t"+
+                    Math.min((long)(x+1)*resolution,chrom.getLength())+"\t"+p.nonzero[x]+"\t"+p.z[x]+"\t"+
+                    p.mean+"\t"+p.sd+"\t"+(p.bad[x]?0:1)+"\n");
+            }
+        }catch(IOException e){throw new IllegalStateException("Cannot write cis coverage report",e);}
     }
 
     protected void determineBadIndicesFromGenomewideStats(Chromosome[] chromosomes) {

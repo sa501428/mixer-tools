@@ -59,7 +59,8 @@ public class SliceUtils {
             SubcompartmentInterval collapsedInterval = (SubcompartmentInterval) intervals.get(0).deepClone();
 
             Set<SubcompartmentInterval> newIntervals = new HashSet<>();
-            for (SubcompartmentInterval nextInterval : intervals) {
+            for (int i = 1; i < intervals.size(); i++) {
+                SubcompartmentInterval nextInterval = intervals.get(i);
                 if (collapsedInterval.overlapsWith(nextInterval)) {
                     collapsedInterval = collapsedInterval.absorbAndReturnNewInterval(nextInterval);
                 } else {
@@ -160,7 +161,7 @@ public class SliceUtils {
                 continue;
             }
 
-            if (tokens[0].startsWith("chr") && tokens.length > 4) {
+            if (tokens[0].startsWith("chr") && tokens.length > 3) {
                 // valid line
                 String chr1Name = tokens[0];
                 int start1 = Integer.parseInt(tokens[1]);
@@ -169,7 +170,7 @@ public class SliceUtils {
 
                 int val;
                 try {
-                    val = Integer.parseInt(tokens[4]);
+                    val = Integer.parseInt(tokens[3]);
                 } catch (Exception e) {
                     val = 0;
                 }

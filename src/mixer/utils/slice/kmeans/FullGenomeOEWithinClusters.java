@@ -65,6 +65,7 @@ public class FullGenomeOEWithinClusters {
         BadIndexFinder badIndexFinder = new BadIndexFinder(chromosomeHandler.getAutosomalChromosomesArray(),
                 resolution, normalizationTypes);
         badIndexFinder.createInternalBadList(datasets, chromosomeHandler.getAutosomalChromosomesArray());
+        badIndexFinder.writeCisCoverage(outputDirectory);
 
         int absMaxClusters = numClusterSizeKValsUsed + startingClusterSizeK;
         sliceMatrix = new SliceMatrix(chromosomeHandler, datasets.get(0), normalizationTypes.get(0), resolution, outputDirectory,

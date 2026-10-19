@@ -77,7 +77,7 @@ public class SubcompartmentInterval extends SimpleInterval {
 
     @Override
     public String toString() {
-        return "chr" + getChrName() + "\t" + getX1() + "\t" + getX2() + "\t" + clusterName + "\t" + clusterID
+        return (getChrName().startsWith("chr") ? getChrName() : "chr" + getChrName()) + "\t" + getX1() + "\t" + getX2() + "\t" + clusterName + "\t0"
                 + "\t.\t" + getX1() + "\t" + getX2() + "\t" + SubcompartmentColors.getColorString(clusterID);
     }
 
@@ -90,7 +90,7 @@ public class SubcompartmentInterval extends SimpleInterval {
         List<SubcompartmentInterval> splitList = new ArrayList<>();
 
         for (int i = getX1(); i < getX2(); i += width) {
-            splitList.add(new SubcompartmentInterval(getChrIndex(), getChrName(), i, i + width, clusterID, clusterName));
+            splitList.add(new SubcompartmentInterval(getChrIndex(), getChrName(), i, Math.min(i + width, getX2()), clusterID, clusterName));
         }
 
         return splitList;

@@ -76,7 +76,7 @@ public class EncodeExportUtils {
 
         encodeSubcompartmentIntervals = SliceUtils.collapseSubcompartmentIntervals(encodeSubcompartmentIntervals);
 
-        File outBedFile = new File(outputDirectory, "slice_subcompartment_clusters.bed");
+        File outBedFile = new File(outputDirectory, "slice_subcompartment_clusterings.tsv");
 
         try {
             FileWriter filewriter = new FileWriter(outBedFile);
@@ -86,6 +86,15 @@ public class EncodeExportUtils {
                 filewriter.write(interval.toString() + "\n");
             }
             filewriter.close();
+            List<SubcompartmentInterval> display = new ArrayList<>();
+            for (SubcompartmentInterval interval : encodeSubcompartmentIntervals) {
+                display.add(new SubcompartmentInterval(interval.getChrIndex(), interval.getChrName(),
+                        interval.getX1(), interval.getX2(), interval.getClusterID() + 1));
+            }
+            display = SliceUtils.collapseSubcompartmentIntervals(display);
+            try (FileWriter bed = new FileWriter(new File(outputDirectory, "slice_subcompartment_clusters.bed"))) {
+                for (SubcompartmentInterval interval : display) bed.write(interval.toString() + "\n");
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

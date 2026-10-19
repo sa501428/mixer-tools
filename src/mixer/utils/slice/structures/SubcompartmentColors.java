@@ -27,46 +27,25 @@ package mixer.utils.slice.structures;
 import java.awt.*;
 
 public class SubcompartmentColors {
-    private static final Color[] colors = new Color[]{
-            new Color(0, 0, 0),
-            new Color(34, 139, 34),
-            new Color(152, 251, 152),
-            new Color(220, 20, 60),
-            new Color(255, 255, 0),
-            new Color(112, 128, 144),
-            new Color(75, 0, 130),
-            new Color(255, 255, 0),
-            new Color(255, 0, 0),
-            new Color(0, 234, 255),
-            new Color(170, 0, 255),
-            new Color(255, 127, 0),
-            new Color(191, 255, 0),
-            new Color(0, 149, 255),
-            new Color(255, 0, 170),
-            new Color(255, 212, 0),
-            new Color(106, 255, 0),
-            new Color(0, 64, 255),
-            new Color(237, 185, 185),
-            new Color(185, 215, 237),
-            new Color(231, 233, 185),
-            new Color(220, 185, 237),
-            new Color(185, 237, 224),
-            new Color(143, 35, 35),
-            new Color(35, 98, 143),
-            new Color(143, 106, 35),
-            new Color(107, 35, 143),
-            new Color(79, 143, 35),
-            new Color(115, 115, 115),
-            new Color(204, 204, 204)
+    private static final int[][] COLORS = {
+        {0,114,178},{230,159,0},{0,158,115},{213,62,0},{170,0,170},
+        {0,190,210},{240,80,150},{110,70,30},{190,190,0},{50,40,120},
+        {140,210,40},{35,35,35},{255,180,160},{100,0,45},{0,90,70},
+        {180,140,220},{240,210,50},{100,160,230},{150,100,100},{0,45,65}
     };
-
-    public static Color getColorWithAlpha(int id, int alpha) {
-        Color color = colors[id % colors.length];
-        return new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha);
+    private static Color color(int id) {
+        if (id <= 0) return new Color(128,128,128);
+        if (id <= COLORS.length) {
+            int[] c = COLORS[id-1]; return new Color(c[0],c[1],c[2]);
+        }
+        return new Color((int)(((long)id-20)*0x9e3779L) & 0xffffff);
     }
-
-    public static String getColorString(Integer clusterID) {
-        Color color = colors[clusterID % colors.length];
-        return color.getRed() + "," + color.getGreen() + "," + color.getBlue();
+    public static Color getColorWithAlpha(int id, int alpha) {
+        Color c = color(id);
+        return new Color(c.getRed(),c.getGreen(),c.getBlue(),alpha);
+    }
+    public static String getColorString(Integer id) {
+        Color c = color(id);
+        return c.getRed()+","+c.getGreen()+","+c.getBlue();
     }
 }

@@ -1,3 +1,5 @@
+#include "slice/cis_coverage.hpp"
+#include "slice/bed_output.hpp"
 // Native SLICE pipeline; all .hic access goes through straw C++.
 #include "slice/slice.hpp"
 #include "slice/trans_preprocess.hpp"
@@ -94,7 +96,7 @@ std::pair<float, float> coverageStats(const Matrix& data) {
     }
     return {mean, static_cast<float>(std::sqrt(square / n))};
 }
-Mask badBins(const std::vector<Input>& inputs, int resolution, const Mask& excluded) {
+Mask badBins(const std::vector<Input>& inputs, int resolution, const Mask& excluded, const std::filesystem::path& reportPath) {
     Matrix sums, nonzeros;
     std::vector<std::vector<size_t>> lengths;
     for (const auto& chr : inputs[0].chromosomes) {
@@ -141,6 +143,17 @@ Mask badBins(const std::vector<Input>& inputs, int resolution, const Mask& exclu
             bad[a][x] = !(sums[a][x] > 0) || !(nonzeros[a][x] > 0) ||
                         (sd > 0 && (sums[a][x] - mean) / sd > 5) ||
                         (nzsd > 0 && (nonzeros[a][x] - nzmean) / nzsd < -3);
+    }
+    std::ofstream coverage;
+    if(!reportPath.empty()){coverage=outputFile(reportPath);cis_coverage::reportHeader(coverage);}
+    for(size_t a=0;a<bad.size();++a){
+        std::vector<double> nonzero(bad[a].size());
+        for(const auto& input:inputs)records(input,a,a,resolution,"NONE",[&](size_t x,size_t y,float count){
+            if(x!=y&&std::isfinite(count)&&count>0){++nonzero[x];++nonzero[y];}
+        });
+        auto profile=cis_coverage::evaluate(std::move(nonzero));
+        for(size_t x=0;x<bad[a].size();++x)bad[a][x]=bad[a][x]||profile.bad[x];
+        if(coverage.is_open())cis_coverage::report(coverage,inputs[0].chromosomes[a].name,inputs[0].chromosomes[a].length,resolution,profile);
     }
     return bad;
 }
@@ -243,14 +256,11 @@ std::ofstream outputFile(const std::filesystem::path& path, bool binary) {
     out.exceptions(std::ios::badbit | std::ios::failbit);
     return out;
 }
-const char* color(int id) {
-    static const char* colors[] = {"0,0,0", "34,139,34", "152,251,152", "220,20,60", "255,255,0", "112,128,144", "75,0,130", "255,255,0", "255,0,0", "0,234,255", "170,0,255", "255,127,0", "191,255,0", "0,149,255", "255,0,170", "255,212,0", "106,255,0", "0,64,255", "237,185,185", "185,215,237", "231,233,185", "220,185,237", "185,237,224", "143,35,35", "35,98,143", "143,106,35", "107,35,143", "79,143,35", "115,115,115", "204,204,204"};
-    return colors[std::abs(id) % 30];
-}
+std::string color(int id) { return subcompartment_bed::color(id); }
 void bedLine(std::ostream& out, const chromosome& chr, int64_t start, int64_t end, int id) {
     std::string name = chr.name;
     if (name.rfind("chr", 0) != 0) name = "chr" + name;
-    out << name << '\t' << start << '\t' << end << '\t' << id << '\t' << id << "\t.\t" << start << '\t' << end << '\t' << color(id) << '\n';
+    out << name << '\t' << start << '\t' << end << '\t' << id << "\t0\t.\t" << start << '\t' << end << '\t' << color(id) << '\n';
 }
 void saveBed(const std::filesystem::path& path, const Input& input, const CleanMatrix& data, const std::vector<Cluster>& clusters) {
     std::vector<int> labels(data.values.size(), 0);
@@ -275,6 +285,7 @@ template<class T> void writeNpy(const std::filesystem::path& path, const std::ve
     const uint16_t endian = 1;
     for (const auto& row : values) {
         if (row.size()!=values[0].size()) throw std::runtime_error("Ragged NPY matrix");
+        if (*reinterpret_cast<const char*>(&endian) == 1) {out.write(reinterpret_cast<const char*>(row.data()),std::streamsize(row.size()*sizeof(T)));continue;}
         for (T x : row) {
             const char* bytes = reinterpret_cast<const char*>(&x);
             if (*reinterpret_cast<const char*>(&endian) == 1) out.write(bytes, sizeof x);
@@ -315,8 +326,10 @@ std::vector<Input> loadInputs(const Options& options) {
         }
         requireResolution(in, options.resolution);
         requireResolution(in, lowres);
-        in.intra = chooseNorm(in, options.resolution, options.normalization.empty()
-            ? std::vector<std::string>{"SCALE", "KR"} : std::vector<std::string>{options.normalization});
+        auto cisCandidates=options.normalization.empty()?std::vector<std::string>{"SCALE","KR"}:std::vector<std::string>{options.normalization};
+        if(options.dual)cisCandidates.push_back("NONE");
+        in.intra=chooseNorm(in,options.resolution,cisCandidates);
+        if(options.dual&&in.intra=="NONE")std::cerr<<"Warning: no complete cis vectors; compression uses NONE and cis companion retains only available vectors\n";
         in.gw = options.detectTranslocations ? chooseNormLabel(in, options.normalization.empty()
             ? (options.javaCompatible?std::vector<std::string>{"GW_SCALE", "GW_KR"}:std::vector<std::string>{"GW_SCALE", "GW_KR", "NONE"}) : std::vector<std::string>{options.normalization}) : "NONE";
         in.coverage = in.intra;
@@ -335,7 +348,7 @@ std::vector<Input> loadInputs(const Options& options) {
     }
     return inputs;
 }
-CleanMatrix compressedTrans(const Input& input, const Mask& bad, const std::vector<Order>& orders, int resolution, double minExposureFraction, double memoryGB, bool legacy) {
+CleanMatrix compressedTrans(const Input& input, const Mask& bad, const std::vector<Order>& orders, int resolution, double minExposureFraction, double memoryGB, bool legacy, unsigned threads, bool allowPartial) {
     CleanMatrix data;
     std::vector<std::vector<int64_t>> rows;
     std::vector<size_t> offsets;
@@ -350,24 +363,34 @@ CleanMatrix compressedTrans(const Input& input, const Mask& bad, const std::vect
         }
     }
     if (!columns || data.intervals.empty()) throw std::runtime_error("No matrix created; map is too sparse");
-    data.weights.assign(columns, 0);
+    Mask valid=bad;for(auto& row:valid)std::fill(row.begin(),row.end(),true);
+    if(!legacy&&input.inter!="NONE")for(size_t a=0;a<orders.size();++a){std::vector<double> vector;
+        if(!normalizationVector(input,input.chromosomes[a],resolution,input.inter,vector)&&!allowPartial)throw std::runtime_error("Missing requested trans vectors");
+        for(size_t x=0;x<valid[a].size();++x)valid[a][x]=x<vector.size()&&vector[x]>0&&std::isfinite(vector[x]);}
+    data.weights.assign(columns, 0);std::vector<int> fullWeights(columns,0);
     hic_trans::memoryGuard(data.intervals.size(),columns,memoryGB);
     data.values.assign(data.intervals.size(), Row(columns, 0));
     for (size_t a = 0; a < orders.size(); ++a) {
-        for (size_t x = 0; x < bad[a].size(); ++x) if (!bad[a][x] && orders[a].assignments[x] >= 0)
-            ++data.weights[offsets[a] + orders[a].assignments[x]];
+        for (size_t x = 0; x < bad[a].size(); ++x) if (!bad[a][x] && orders[a].assignments[x] >= 0){
+            ++fullWeights[offsets[a]+orders[a].assignments[x]];
+            if(valid[a][x])++data.weights[offsets[a]+orders[a].assignments[x]];}
         for (auto row : rows[a]) if (row >= 0)
             std::fill(data.values[row].begin() + offsets[a], data.values[row].begin() + offsets[a] + orders[a].count, nan);
     }
     data.exposure.assign(data.values.size(),Row(columns,0));
     for(size_t i=0;i<data.values.size();++i)for(size_t j=0;j<columns;++j)if(std::isfinite(data.values[i][j]))data.exposure[i][j]=data.weights[j];
-    for (size_t a = 0; a < orders.size(); ++a) for (size_t b = a + 1; b < orders.size(); ++b)
+    std::vector<std::pair<size_t,size_t>> pairs;
+    for(size_t a=0;a<orders.size();++a)for(size_t b=a+1;b<orders.size();++b)pairs.emplace_back(a,b);
+    // Each pair owns distinct chromosome feature columns; no reductions race.
+    detail::parallelFor(pairs.size(),threads,[&](size_t t){size_t a=pairs[t].first,b=pairs[t].second;
+        if(allowPartial&&(std::none_of(valid[a].begin(),valid[a].end(),[](bool v){return v;})||std::none_of(valid[b].begin(),valid[b].end(),[](bool v){return v;})))return;
         records(input, a, b, resolution, input.inter, [&](size_t x, size_t y, float v) {
             if (!std::isfinite(v)) return;
             int ca = orders[a].assignments[x], cb = orders[b].assignments[y];
-            if (rows[a][x] >= 0 && !bad[b][y] && cb >= 0) data.values[rows[a][x]][offsets[b] + cb] += v;
-            if (rows[b][y] >= 0 && !bad[a][x] && ca >= 0) data.values[rows[b][y]][offsets[a] + ca] += v;
+            if (rows[a][x] >= 0 && valid[a][x] && valid[b][y] && !bad[b][y] && cb >= 0) data.values[rows[a][x]][offsets[b] + cb] += v;
+            if (rows[b][y] >= 0 && valid[b][y] && valid[a][x] && !bad[a][x] && ca >= 0) data.values[rows[b][y]][offsets[a] + ca] += v;
         });
+    });
     if (!input.translocations.empty()) {
         // Union excluded partner bins before counting, so overlapping regions
         // cannot subtract the same bin twice. Only affected target rows are built.
@@ -389,7 +412,7 @@ CleanMatrix compressedTrans(const Input& input, const Mask& bad, const std::vect
             for (const auto& row : pair.second) {
                 std::vector<int> removed(orders[b].count, 0);
                 for (size_t y = 0; y < row.second.size(); ++y)
-                    if (row.second[y] && !bad[b][y] && orders[b].assignments[y] >= 0) ++removed[orders[b].assignments[y]];
+                    if (row.second[y] && !bad[b][y] && valid[b][y] && orders[b].assignments[y] >= 0) ++removed[orders[b].assignments[y]];
                 for (size_t g = 0; g < removed.size(); ++g) if (removed[g]) {
                     size_t j = offsets[b] + g; int eligible = data.weights[j] - removed[g];
                     auto& value = data.values[rows[a][row.first]][j];
@@ -400,6 +423,9 @@ CleanMatrix compressedTrans(const Input& input, const Mask& bad, const std::vect
             }
         }
     }
+    if(!legacy)for(size_t i=0;i<data.values.size();++i)for(size_t j=0;j<columns;++j)if(data.exposure[i][j]<minExposureFraction*fullWeights[j]){data.values[i][j]=nan;data.exposure[i][j]=0;}
+    if(!legacy)for(size_t a=0;a<orders.size();++a)for(size_t x=0;x<rows[a].size();++x)if(rows[a][x]>=0&&!valid[a][x]){
+        std::fill(data.values[rows[a][x]].begin(),data.values[rows[a][x]].end(),nan);std::fill(data.exposure[rows[a][x]].begin(),data.exposure[rows[a][x]].end(),0);}
     return data;
 }
 }
