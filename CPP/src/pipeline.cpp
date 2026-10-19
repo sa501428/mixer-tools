@@ -84,20 +84,22 @@ void encode(const Options& o, const detail::Input& input, const CleanMatrix& dat
 }
 namespace {
 void adaptiveRun(const Options& o,const detail::Input& input,const CleanMatrix& inter,const CleanMatrix* cis){
-    int target=o.targetK?o.targetK:o.firstK;if(target<1||target>128)throw std::runtime_error("Adaptive target K must be 1..128");int lo=o.minK?o.minK:(o.adaptive?std::max(1,target-2):target),hi=o.maxK?o.maxK:(o.adaptive?target+4:target);
-    if(target<1||target>128||hi>128)throw std::runtime_error("Adaptive maximum K exceeds 128");
+    int target=o.targetK?o.targetK:(o.adaptive?0:o.firstK);if(target<0||target>128)throw std::runtime_error("Adaptive target K must be 1..128");int lo=o.minK?o.minK:(o.adaptive?1:target),hi=o.maxK?o.maxK:(o.adaptive?o.endK-1:target);
+    if(target<0||target>128||hi>128)throw std::runtime_error("Adaptive maximum K exceeds 128");
     std::vector<const CleanMatrix*> views{&inter};if(cis)views.push_back(cis);
-    std::vector<hic_adaptive::Fit> fits;auto stats=detail::outputFile(o.output/"adaptive_fits.tsv");stats<<"view\ttarget_k\tselected_k\tbic\tconverged\titerations\n";
+    std::vector<hic_adaptive::Fit> fits;auto stats=detail::outputFile(o.output/"adaptive_fits.tsv");stats<<"view\ttarget_k\tselected_k\tbic\tconverged\titerations\tcriterion\tselection_score\n";
     for(size_t v=0;v<views.size();++v){const auto& data=*views[v];hic_adaptive::Rows rows;for(const auto& row:data.values)rows.emplace_back(row.begin(),row.end());
-        struct Job{int k,attempt;};std::vector<Job> jobs;for(int k=lo;k<=hi&&size_t(k*3)<=rows.size();++k)for(int a=0;a<o.attempts;++a)jobs.push_back({k,a});
-        // Independent starts share read-only features, with bounded posterior workspaces.
-        double bytes=std::max(1.,double(rows.size())*hi*16);unsigned workers=std::max(1u,std::min(o.threads,unsigned(std::max(1.,o.memoryGB*1073741824*.2/bytes))));
-        workers=std::max(1u,std::min(workers,unsigned(jobs.size())));
-        std::mutex resultMutex;hic_adaptive::Fit best;size_t bestIndex=jobs.size();
-        detail::parallelFor(jobs.size(),workers,[&](size_t j){const auto& job=jobs[j];auto fit=hic_adaptive::fit(rows,job.k,o.maxIterations,o.seed+1009*job.k+104729*job.attempt,o.model=="gmm",{},std::max(1u,o.threads/workers));
-            std::lock_guard<std::mutex> lock(resultMutex);if(fit.bic<best.bic||(fit.bic==best.bic&&j<bestIndex)){best=std::move(fit);bestIndex=j;}});
+        double bytes=std::max(1.,double(rows.size())*hi*16);
+        unsigned workers=std::max(1u,std::min(o.threads,unsigned(std::max(1.,o.memoryGB*1073741824*.2/bytes))));
+        std::vector<hic_adaptive::Candidate> candidates;hic_adaptive::Fit best;
+        try{best=hic_adaptive::search(rows,lo,hi,o.attempts,o.maxIterations,o.seed,o.model=="gmm",{},o.threads,o.kSelection,&candidates,workers,o.kSearch=="exhaustive");}
+        catch(const std::runtime_error&){if(!v)throw;}
+        auto selection=detail::outputFile(o.output/(v?"cis_model_selection.tsv":"inter_model_selection.tsv"));
+        selection<<"k\tattempt\tbic\taic\tcriterion\tscore\tconverged\titerations\n";
+        for(const auto& c:candidates)selection<<c.k<<'\t'<<c.attempt<<'\t'<<c.bic<<'\t'<<c.aic<<'\t'<<o.kSelection<<'\t'<<(o.kSelection=="aic"?c.aic:c.bic)<<'\t'<<c.converged<<'\t'<<c.iterations<<'\n';
+        if(best.means.size()==size_t(hi)&&hi>lo)std::cerr<<"Warning: selected K reaches upper search bound; widen --k-range\n";
         if(!std::isfinite(best.bic)){if(v){std::cerr<<"Warning: no supported cis fit; returning inter calls\n";views.resize(1);break;}throw std::runtime_error("No supported adaptive Mixer fit");}
-        stats<<(v?"cis":"inter")<<'\t'<<target<<'\t'<<best.means.size()<<'\t'<<best.bic<<'\t'<<best.converged<<'\t'<<best.iterations<<'\n';
+        stats<<(v?"cis":"inter")<<'\t'<<target<<'\t'<<best.means.size()<<'\t'<<best.bic<<'\t'<<best.converged<<'\t'<<best.iterations<<'\t'<<o.kSelection<<'\t'<<best.score(o.kSelection)<<'\n';
         std::vector<Cluster> clusters(best.means.size());for(size_t i=0;i<best.labels.size();++i)if(best.labels[i]>=0)clusters[best.labels[i]].members.push_back(i);
         detail::saveBed(o.output/(v?"cis.bed":"inter.bed"),input,data,clusters);
         auto probabilities=detail::outputFile(o.output/(v?"cis_memberships.tsv":"inter_memberships.tsv"));probabilities<<"chromosome\tstart\tend\tlabel\tsoft_score\n";
@@ -125,6 +127,7 @@ void run(const Options& options) {
     auto parameters=detail::outputFile(options.output/"analysis_parameters.tsv");
     parameters<<"parameter\tvalue\ntrans_mode\t"<<(options.balanceTrans?"computed_if_raw":"stored")<<"\nrow_standardization\t"<<(options.rowStandardization?"weighted-zscore":"none")<<"\ncleaning\t"<<(options.legacyCleaning?"legacy":"zero_preserving_log1p_clip")<<"\nmax_memory_gb\t"<<options.memoryGB<<'\n';
     parameters<<"cluster_policy\t"<<(options.adaptive?"adaptive":"fixed")<<"\nnormalization_views\t"<<(options.dual?"dual":"inter")<<"\ncis_view_weight\t"<<options.cisViewWeight<<"\nmatch_overlap\t"<<options.matchOverlap<<"\nmodel\t"<<((options.adaptive||options.dual||options.model=="gmm")?options.model:(options.means&&options.medians?"kmeans,kmedians":options.medians?"kmedians":"kmeans"))<<"\nmax_iterations\t"<<options.maxIterations<<"\nthreads\t"<<options.threads<<"\ndistance_bounds\t"<<options.distanceBounds<<'\n';
+    parameters<<"k_selection\t"<<options.kSelection<<"\nk_search\t"<<options.kSearch<<'\n';
     parameters<<"cis_coverage_statistic\traw_off_diagonal_nonzeros\ncis_coverage_z\t-2.5\ncis_coverage_population\tnonempty_rows_per_chromosome\n";
     auto bad=detail::badBins(inputs,options.resolution,{},options.output/"cis_coverage.tsv");
     if (options.detectTranslocations) {

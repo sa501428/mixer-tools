@@ -20,7 +20,8 @@ struct Fit {
     Rows means,variance,logVariance,probability;
     std::vector<double> prior;
     std::vector<int> labels;
-    double bic=INFINITY,likelihood=-INFINITY;
+    double bic=INFINITY,aic=INFINITY,likelihood=-INFINITY;
+    double score(const std::string& criterion) const { return criterion=="aic"?aic:bic; }
     bool converged=false;
     int iterations=0;
 };
@@ -30,7 +31,7 @@ inline void posteriorInto(const std::vector<double>& x,const Fit& f,bool gaussia
         for(size_t j=0;j<x.size();++j)if(std::isfinite(x[j])&&std::isfinite(f.means[c][j])){
             double delta=x[j]-f.means[c][j],var=gaussian?f.variance[c][j]:1.;
             v+=delta*delta/var+(gaussian?(f.logVariance.empty()?std::log(6.283185307179586*var):f.logVariance[c][j]):0);++n;}
-        score[c]=n?std::log(std::max(1e-12,f.prior[c]))-.5*v:-INFINITY;
+        score[c]=n?(gaussian?std::log(std::max(1e-12,f.prior[c])):0)-.5*v:-INFINITY;
     }
 }
 inline std::vector<double> posterior(const std::vector<double>& x,const Fit& f,bool gaussian){std::vector<double> result;posteriorInto(x,f,gaussian,result);return result;}
@@ -43,6 +44,7 @@ inline Fit fit(const Rows& x,int k,int iterations,uint64_t seed,bool gaussian=fa
                const std::vector<double>& observationWeight={},unsigned threads=1) {
     Fit f;if(x.empty()||k<1||size_t(k)>x.size())return f;
     size_t n=x.size(),d=x[0].size();if(!d)return f;
+    if(std::any_of(x.begin(),x.end(),[](const auto& row){return std::none_of(row.begin(),row.end(),[](double v){return std::isfinite(v);});}))return f;
     if(!observationWeight.empty()&&observationWeight.size()!=n)throw std::invalid_argument("Observation weight dimensions");
     std::vector<double> weights=observationWeight.empty()?std::vector<double>(n,1):observationWeight;
     double neff=0,weight2=0;for(double w:weights){if(!(w>0&&std::isfinite(w)))throw std::invalid_argument("Invalid observation weight");neff+=w;weight2+=w*w;}
@@ -89,17 +91,50 @@ inline Fit fit(const Rows& x,int k,int iterations,uint64_t seed,bool gaussian=fa
         for(int c=0;c<k;++c)f.probability[i][c]=std::exp(score[c]-best)/sum;}
     // At least three independent observations; never a fraction of genome size.
     if(std::any_of(support.begin(),support.end(),[](size_t m){return m<3;}))return Fit{};
-    f.bic=-2*f.likelihood+(k*modeledFeatures*2+k-1)*std::log(std::max(2.,neff));
-    if(!gaussian){double residual=0,mass=0;for(size_t i=0;i<n;++i)if(f.labels[i]>=0){size_t c=size_t(f.labels[i]);double distance=0;size_t available=0;for(size_t j=0;j<d;++j)if(std::isfinite(x[i][j])&&std::isfinite(f.means[c][j])){double delta=x[i][j]-f.means[c][j];distance+=delta*delta;available++;}if(available){residual+=weights[i]*distance;mass+=weights[i];}}
-        f.bic=neff*std::log(std::max(1e-12,residual/std::max(1.,mass)))+(k*modeledFeatures+k)*std::log(std::max(2.,neff));}
+    // Likelihood mass and penalty both use independent-observation effective N.
+    f.likelihood*=neff/n;
+    double parameters=k*modeledFeatures*2+k-1;
+    if(!gaussian){
+        // Hard-assignment spherical Gaussian likelihood, with one shared fitted
+        // variance and fitted mixing proportions. Missing cells add no evidence.
+        double residual=0,cells=0,mixing=0;std::vector<double> assigned(k);
+        for(size_t i=0;i<n;++i)if(f.labels[i]>=0){size_t c=size_t(f.labels[i]);assigned[c]+=weights[i];
+            for(size_t j=0;j<d;++j)if(std::isfinite(x[i][j])&&std::isfinite(f.means[c][j])){
+                double delta=x[i][j]-f.means[c][j];residual+=weights[i]*delta*delta;cells+=weights[i];}}
+        double variance=std::max(1e-10,residual/std::max(1.,cells));
+        for(size_t c=0;c<assigned.size();++c){double m=assigned[c];if(m>0)mixing+=m*std::log(m/n);f.prior[c]=m/n;
+            std::fill(f.variance[c].begin(),f.variance[c].end(),variance);}
+        f.likelihood=(mixing-.5*(cells*std::log(6.283185307179586*variance)+residual/variance))*neff/n;
+        parameters=k*modeledFeatures+k; // means, K-1 proportions, shared variance
+    }
+    f.bic=-2*f.likelihood+parameters*std::log(std::max(2.,neff));
+    f.aic=-2*f.likelihood+2*parameters;
     return f;
 }
-inline Fit search(const Rows& x,int lo,int hi,int attempts,int iterations,uint64_t seed,bool gaussian=false,const std::vector<double>& weights={},unsigned threads=1){
-    struct Job{int k,a;};std::vector<Job> jobs;for(int k=lo;k<=hi&&size_t(k*3)<=x.size();++k)for(int a=0;a<attempts;++a)jobs.push_back({k,a});
-    Fit best;std::mutex mutex;std::atomic<size_t> next{0};size_t bestIndex=jobs.size();
-    auto work=[&]{for(size_t j;(j=next.fetch_add(1))<jobs.size();){auto job=jobs[j];auto f=fit(x,job.k,iterations,seed+1009*job.k+104729*job.a,gaussian,weights,std::max(1u,threads/unsigned(std::max<size_t>(1,std::min<size_t>(threads,jobs.size())))));std::lock_guard<std::mutex> lock(mutex);if(f.bic<best.bic||(f.bic==best.bic&&j<bestIndex)){best=std::move(f);bestIndex=j;}}};
-    std::vector<std::future<void>> workers;for(size_t t=1;t<std::min<size_t>(threads,jobs.size());++t)workers.push_back(std::async(std::launch::async,work));work();for(auto& worker:workers)worker.get();
-    if(!std::isfinite(best.bic))throw std::runtime_error("No supported continuous fit in candidate K range");return best;
+struct Candidate {int k=0,attempt=0;double bic=INFINITY,aic=INFINITY;bool converged=false;int iterations=0;};
+inline Fit search(const Rows& x,int lo,int hi,int attempts,int iterations,uint64_t seed,bool gaussian=false,const std::vector<double>& weights={},unsigned threads=1,
+                  const std::string& criterion="bic",std::vector<Candidate>* diagnostics=nullptr,unsigned maxWorkers=0,bool exhaustive=false){
+    if(lo<1||hi<lo||hi>128||attempts<1||iterations<1||!threads||(criterion!="bic"&&criterion!="aic"))throw std::invalid_argument("Invalid continuous K search options");
+    // Screen all K once. Keep only the winning posterior workspace between phases;
+    // diagnostics contain scalars. Spend remaining restarts on the leading K.
+    struct Job{int k,a;};std::vector<Job> jobs;
+    for(int k=lo;k<=hi&&size_t(k)*3<=x.size();++k)jobs.push_back({k,0});
+    std::vector<Candidate> records;Fit best;size_t bestJob=0;unsigned workers=std::min(threads,maxWorkers?maxWorkers:threads);
+    auto phase=[&]{
+        std::vector<Candidate> phaseRecords(jobs.size());std::mutex mutex;std::atomic<size_t> next{0};
+        auto work=[&]{for(size_t j;(j=next.fetch_add(1))<jobs.size();){auto job=jobs[j];
+            auto f=fit(x,job.k,iterations,seed+1009*job.k+104729*job.a,gaussian,weights,std::max(1u,threads/std::max(1u,std::min(workers,unsigned(jobs.size())))));
+            phaseRecords[j]={job.k,job.a,f.bic,f.aic,f.converged,f.iterations};
+            size_t key=size_t(job.k)*size_t(attempts)+size_t(job.a);std::lock_guard<std::mutex> lock(mutex);
+            if(std::isfinite(f.score(criterion))&&(f.score(criterion)<best.score(criterion)||(f.score(criterion)==best.score(criterion)&&key<bestJob))){best=std::move(f);bestJob=key;}}};
+        std::vector<std::future<void>> pool;for(size_t t=1;t<std::min<size_t>(workers,jobs.size());++t)pool.push_back(std::async(std::launch::async,work));work();for(auto& w:pool)w.get();
+        records.insert(records.end(),phaseRecords.begin(),phaseRecords.end());
+    };
+    phase();auto ranking=records;
+    std::stable_sort(ranking.begin(),ranking.end(),[&](const Candidate& a,const Candidate& b){return (criterion=="aic"?a.aic:a.bic)<(criterion=="aic"?b.aic:b.bic);});
+    jobs.clear();for(size_t i=0;i<(exhaustive?ranking.size():std::min<size_t>(2,ranking.size()));++i)for(int a=1;a<attempts;++a)jobs.push_back({ranking[i].k,a});
+    phase();if(diagnostics)*diagnostics=std::move(records);
+    if(!std::isfinite(best.score(criterion)))throw std::runtime_error("No supported continuous fit in candidate K range");return best;
 }
 // Convert nonnegative sums to log rates. Equal feature scaling leaves row amplitude intact.
 inline Rows features(const Rows& sums,const Rows& exposure,const std::vector<double>& sourceMass={}){

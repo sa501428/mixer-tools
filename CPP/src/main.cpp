@@ -10,7 +10,8 @@
 namespace {
 void usage() {
     std::cout << "Mixer Tools SLICe C++\n"
-      "Usage: slice [slice] [options] <file.hic[,file2.hic]> <K0,KF,nK> <outfolder> <prefix>\n"
+      "Usage: slice [options] FILE.hic OUTPUT [PREFIX] (automatic K=1..10)\n"
+      "   or: slice [slice] [options] <file.hic[,file2.hic]> <K0,KF,nK> <outfolder> <prefix>\n"
       "  K0 minimum K; KF exclusive upper bound; nK attempts per K\n"
       "  -r, --resolutions LIST   Resolution (default 100000; first value used)\n"
       "  -c, --chromosomes LIST   Selected autosomes\n"
@@ -32,6 +33,8 @@ void usage() {
       "      --cluster-policy fixed|adaptive (fixed)\n"
       "      --target-clusters K  Target for adaptive search\n"
       "      --k-range MIN,MAX    Inclusive adaptive search bounds\n"
+      "      --k-search screened|exhaustive Restart budget (default screened)\n"
+    "      --k-selection bic|aic  Automatic selection criterion (default bic)\n"
       "      --max-iterations N    Per-fit bound (200)\n"
       "      --model kmeans|gmm  Adaptive continuous backend\n"
       "      --has-translocation  Detect and mask suspected translocations\n"
@@ -98,19 +101,21 @@ int main(int argc, char** argv) {
             if (!endOptions && arg == "--has-translocation") { options.detectTranslocations = true; continue; }
             if (!endOptions && arg.rfind('-', 0) == 0) {
                 std::string name = arg.substr(0, arg.find('=')), value;
-                const std::vector<std::string> known = {"-r", "--resolutions", "--resolution", "-c", "--chromosomes", "-z", "--threads", "--random-seeds", "--subsample", "-k", "--normalization", "--max-retries", "--max-iterations", "--normalization-views", "--cluster-policy", "--model", "--k-range", "--target-clusters", "--cis-view-weight", "--match-overlap", "--cis-normalization", "--trans-normalization", "--row-standardization", "--max-memory-gb", "--min-exposure-fraction", "-m", "--matrix-window-width", "-w", "--window", "--seed", "--compare", "--type", "--corr"};
+                const std::vector<std::string> known = {"-r", "--resolutions", "--resolution", "-c", "--chromosomes", "-z", "--threads", "--random-seeds", "--subsample", "-k", "--normalization", "--max-retries", "--max-iterations", "--normalization-views", "--cluster-policy", "--model", "--k-range", "--target-clusters", "--k-selection", "--k-search", "--cis-view-weight", "--match-overlap", "--cis-normalization", "--trans-normalization", "--row-standardization", "--max-memory-gb", "--min-exposure-fraction", "-m", "--matrix-window-width", "-w", "--window", "--seed", "--compare", "--type", "--corr"};
                 if (std::find(known.begin(), known.end(), name) == known.end()) throw std::invalid_argument("Unknown option: " + name);
                 if (arg.find('=') != std::string::npos) value = arg.substr(arg.find('=') + 1);
                 else if (++i < argc) value = argv[i];
                 else throw std::invalid_argument("Missing value for " + name);
-                if(name=="--match-overlap"){size_t used=0;options.matchOverlap=std::stod(value,&used);if(used!=value.size()||!std::isfinite(options.matchOverlap)||options.matchOverlap<=.5||options.matchOverlap>1)throw std::invalid_argument("Match overlap must be in (0.5,1]");}
+                if(name=="--k-search"){if(value!="screened"&&value!="exhaustive")throw std::invalid_argument("K search must be screened or exhaustive");options.kSearch=value;}
+                else if(name=="--k-selection"){if(value!="bic"&&value!="aic")throw std::invalid_argument("K selection must be bic or aic");options.kSelection=value;options.adaptive=true;}
+                else if(name=="--match-overlap"){size_t used=0;options.matchOverlap=std::stod(value,&used);if(used!=value.size()||!std::isfinite(options.matchOverlap)||options.matchOverlap<=.5||options.matchOverlap>1)throw std::invalid_argument("Match overlap must be in (0.5,1]");}
                 else if(name=="--cis-view-weight"){size_t used=0;options.cisViewWeight=std::stod(value,&used);if(used!=value.size()||!std::isfinite(options.cisViewWeight)||options.cisViewWeight<0||options.cisViewWeight>100)throw std::invalid_argument("Cis view weight must be 0..100");}
                 else if(name=="--normalization-views"){if(value!="inter"&&value!="dual")throw std::invalid_argument("views: inter or dual");options.dual=value=="dual";}
                 else if(name=="--cluster-policy"){if(value!="adaptive"&&value!="fixed")throw std::invalid_argument("cluster policy: adaptive or fixed");options.adaptive=value=="adaptive";}
                 else if(name=="--model"){if(value!="gmm"&&value!="kmeans")throw std::invalid_argument("adaptive model: gmm or kmeans");options.model=value;}
                 else if(name=="--max-iterations")options.maxIterations=positive(value);
                 else if(name=="--target-clusters")options.targetK=positive(value);
-                else if(name=="--k-range"){auto range=split(value);if(range.size()!=2)throw std::invalid_argument("Expected MIN,MAX");options.minK=positive(range[0]);options.maxK=positive(range[1]);if(options.maxK<options.minK||options.maxK>128)throw std::invalid_argument("Invalid K range");}
+                else if(name=="--k-range"){auto range=split(value);if(range.size()!=2)throw std::invalid_argument("Expected MIN,MAX");options.adaptive=true;options.minK=positive(range[0]);options.maxK=positive(range[1]);if(options.maxK<options.minK||options.maxK>128)throw std::invalid_argument("Invalid K range");}
                 else if(name=="--row-standardization") {if(value!="none"&&value!="weighted-zscore")throw std::invalid_argument("Row standardization must be none or weighted-zscore");options.rowStandardization=value!="none";}
                 else if(name=="--max-memory-gb"||name=="--min-exposure-fraction") {size_t used=0;double v=std::stod(value,&used);if(used!=value.size()||!std::isfinite(v)||v<=0||(name=="--min-exposure-fraction"&&v>1))throw std::invalid_argument("Invalid exposure or memory limit");if(name=="--max-memory-gb")options.memoryGB=v;else options.minExposureFraction=v;}
                 else if(name=="--trans-normalization") {options.transNormalization=value;options.balanceTrans=value=="NONE"||value=="AUTO";options.legacyCleaning=false;}
@@ -132,13 +137,17 @@ int main(int argc, char** argv) {
         }
         if (!positional.empty() && positional[0] == "slice") positional.erase(positional.begin());
         if (positional.empty()) { usage(); return argc == 1 ? 0 : 1; }
-        if (positional.size() != 4) throw std::invalid_argument("Expected file.hic, K0,KF,nK, output directory, and prefix (see --help)");
-        options.files = split(positional[0]);
-        auto k = split(positional[1]);
-        if (k.size() != 3) throw std::invalid_argument("Cluster argument must be K0,KF,nK");
-        options.firstK = positive(k[0]); options.endK = positive(k[1]); options.attempts = positive(k[2]);
-        if (options.endK <= options.firstK) throw std::invalid_argument("KF must be greater than K0 (exclusive upper bound)");
-        options.output = positional[2]; options.prefix = positional[3];
+        if(positional.size()==2||positional.size()==3){
+            options.files=split(positional[0]);options.output=positional[1];options.prefix=positional.size()==3?positional[2]:"slice";
+            options.adaptive=true;options.firstK=1;options.endK=11;
+            if(!options.minK){options.minK=1;options.maxK=10;}
+        }else if(positional.size()==4){
+            options.files=split(positional[0]);auto k=split(positional[1]);
+            if(k.size()!=3)throw std::invalid_argument("Cluster argument must be K0,KF,nK");
+            options.firstK=positive(k[0]);options.endK=positive(k[1]);options.attempts=positive(k[2]);
+            if(options.endK<=options.firstK)throw std::invalid_argument("KF must be greater than K0");
+            options.output=positional[2];options.prefix=positional[3];
+        }else throw std::invalid_argument("Expected FILE.hic OUTPUT [PREFIX] or FILE.hic K0,KF,nK OUTPUT PREFIX");
         if (options.prefix.find('/') != std::string::npos || options.prefix.find('\\') != std::string::npos) throw std::invalid_argument("Prefix must be a filename prefix");
         if(options.forceBalance){options.balanceTrans=true;options.legacyCleaning=false;}
         if((options.dual||options.adaptive||options.model=="gmm")&&(options.javaCompatible||options.legacyCleaning))throw std::invalid_argument("Dual/adaptive fitting requires modern cleaning; omit legacy/Java switches");

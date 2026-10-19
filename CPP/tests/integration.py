@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """End-to-end .hic tests; no downloads, NumPy, Java, or preexisting data needed."""
+import csv
 import ast
 import math
 from pathlib import Path
@@ -40,6 +41,18 @@ def main():
         root = Path(temp)
         hic = root/'data.hic'
         fixture(hic)
+        # Short invocation selects K automatically and exports every screened K.
+        for criterion in ('bic','aic'):
+            out=root/('auto-'+criterion)
+            run(binary,'--k-selection',criterion,'--k-range','1,4','--normalization-views','dual',hic,out,'auto')
+            for view in ('inter','cis'):
+                scores=list(csv.DictReader((out/(view+'_model_selection.tsv')).open(),delimiter='\t'))
+                assert {int(r['k']) for r in scores}=={1,2,3,4}
+                fit=list(csv.DictReader((out/'adaptive_fits.tsv').open(),delimiter='\t'))[view=='cis']
+                assert fit['criterion']==criterion
+                assert abs(float(fit['selection_score'])-min(float(r['score']) for r in scores))<.05
+            validate_bed(out/'combined.bed')
+        run(binary,'--k-selection','invalid',hic,root/'bad-auto',ok=False)
         for threads in (1, 3):
             out = root/str(threads)
             run(binary, 'slice', '--no-umap', '--both', '--encode-mode', '--random-seeds', '17,42',

@@ -25,6 +25,7 @@ struct Options {
     unsigned threads = 1;
     uint64_t seed = 22871;
     bool verbose = false;
+    std::string kSelection="bic", kSearch="screened";
     std::filesystem::path output;
     std::string prefix;
     double cisViewWeight=1,matchOverlap=.8;

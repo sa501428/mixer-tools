@@ -33,5 +33,23 @@ int main(){
     auto serial=hic_adaptive::fit(larger,3,50,47,true,{},1),parallel=hic_adaptive::fit(larger,3,50,47,true,{},4);
     require(serial.bic==parallel.bic&&serial.means==parallel.means&&serial.probability==parallel.probability,"Parallel GMM inference preserves deterministic row-order reductions");
     Rows same(30,std::vector<double>(4,1));require(!std::isfinite(hic_adaptive::fit(same,3,20,42,true).bic),"Collapsed components are rejected after bounded repair");
+    // K=1 is a legitimate null model; no forced minimum number of states.
+    require(search(same,1,4,3,40,42,true).means.size()==1,"Constant data selects one state");
+    Rows emptyRows(10,std::vector<double>(4,NAN));
+    require(!std::isfinite(hic_adaptive::fit(emptyRows,1,20,42,true).bic),"Missing rows cannot provide evidence");
+    std::vector<Candidate> candidates;
+    auto chosen=search(data,1,5,3,70,42,true,{},3,"aic",&candidates);
+    require(candidates.size()==9,"Screen five K values and refine only two");
+    auto repeated=search(data,1,5,3,70,42,true,{},1,"aic");
+    require(chosen.aic==repeated.aic&&chosen.labels==repeated.labels,"Search deterministic across worker budgets");
+    auto exhaustive=search(data,1,5,3,70,42,true,{},3,"aic",&candidates,0,true);
+    require(candidates.size()==15&&exhaustive.aic<=chosen.aic,"Exhaustive restart budget covers every K");
+    require(search(data,1,5,3,70,42,false).means.size()==3,"Spherical selection recovers planted three states");
+    double parameters=chosen.means.size()*6*2+chosen.means.size()-1;
+    require(std::abs(chosen.aic-(-2*chosen.likelihood+2*parameters))<1e-8,"Gaussian AIC parameter count");
+    auto spherical=hic_adaptive::fit(data,3,70,42,false);
+    require(std::abs(spherical.bic-spherical.aic-(3*6+3)*(std::log(180.)-2))<1e-8,"Spherical BIC penalty counts means, mixing and variance");
+    bool rejected=false;try{search(data,3,2,1,20,42);}catch(const std::invalid_argument&){rejected=true;}
+    require(rejected,"Invalid search range rejected");
     std::cout<<"Adaptive refinement, partial matching, contradictory chains, rare states and missing-coordinate GMM passed\n";
 }

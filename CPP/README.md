@@ -1,5 +1,6 @@
 # SLICe in C++
 
+Automatic K selection supports `--k-selection bic|aic` (BIC default). See [selection usage](../../CLUSTER_SELECTION.md).
 Current adaptive/dual normalization controls and legacy invocations: [workspace usage](../../ADAPTIVE_USAGE.md). SLIDE/SLIDE_R2 are deprecated for future development and default comparisons.
 
 Adaptive analysis is explicit: `--cluster-policy adaptive --normalization-views dual`. The raw/count and cis-normalized views are fitted separately; provisional states and actual cluster counts are reported.
